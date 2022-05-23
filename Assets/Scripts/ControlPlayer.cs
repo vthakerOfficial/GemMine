@@ -77,8 +77,14 @@ public class ControlPlayer : MonoBehaviour
             // If the player fires, then relock the cursor
             // LockCursor(true);
 
+            // Initiate pickup
+            if (GameManager.gm.pickupEnabled)
+            {
+                GameManager.gm.gameEvents.Do(new EventBase(GameManager.gm.PickupItem));
+            }
+
             // Initiate digging
-            GameManager.gm.gameEvents.Do(new EventBase(GameManager.gm.DigForGold));
+            GameManager.gm.gameEvents.Do(new EventBase(GameManager.gm.DigForItem));
         }
 
         // Log player position

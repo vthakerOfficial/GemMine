@@ -470,8 +470,13 @@ MonoBehaviour:
   xMaxRange: 27
   zMinRange: 0
   zMaxRange: 27
-  spawnItem: {fileID: 8190781353737848073, guid: dcf06c571d6d44e768fc424007b25ccc,
+  goldObject: {fileID: 8190781353737848073, guid: dcf06c571d6d44e768fc424007b25ccc,
     type: 3}
+  gemObjects:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!4 &109741777
 Transform:
   m_ObjectHideFlags: 0
@@ -2430,6 +2435,7 @@ GameObject:
   - component: {fileID: 522422889}
   - component: {fileID: 522422891}
   - component: {fileID: 522422890}
+  - component: {fileID: 522422892}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -2565,18 +2571,19 @@ MonoBehaviour:
   spawner: {fileID: 109741775}
   mineBase: {fileID: 1341139549}
   mainCanvas: {fileID: 1917173964}
-  goldFoundEffect: {fileID: 4647848219652399670, guid: a298f727b3f964b279b3c62faac297ac,
+  itemFoundEffect: {fileID: 4647848219652399670, guid: a298f727b3f964b279b3c62faac297ac,
     type: 3}
-  goldNotFoundEffect: {fileID: 7611655739320008343, guid: 2b5bf0650df1a465284389f281ecfb38,
+  itemNotFoundEffect: {fileID: 7611655739320008343, guid: 2b5bf0650df1a465284389f281ecfb38,
     type: 3}
   pointGainSFX: {fileID: 8300000, guid: 10b752f2fe16a4eac83061676b260a7a, type: 3}
   pointLossSFX: {fileID: 8300000, guid: 63c6ae6da94f84e358485479f8d799ea, type: 3}
-  goldToFind: 2
+  itemsToFind: 1
   delayDuration: 10000
   taskDuration: 30000
   returnToBasePenalty: -5
   wrongDigPenalty: -2
   goldFoundReward: 10
+  gemFoundReward: 10
   maxDigDistance: 3
   eventsPerFrame: 5
   playerActive: 0
@@ -2585,6 +2592,102 @@ MonoBehaviour:
   numTrialsInGame: 36
   scheduledPauseCanvas: {fileID: 205231835}
   endOfGameCanvas: {fileID: 875375277}
+--- !u!82 &522422892
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 522422888}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 8300000, guid: 3f52c598e7fa64a7ca2dbdbbfdf1ebef, type: 3}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &523369814
 GameObject:
   m_ObjectHideFlags: 0

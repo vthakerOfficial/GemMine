@@ -8,10 +8,11 @@ public class SpawnItems : MonoBehaviour
     public float xMaxRange = 31.5f;
     public float zMinRange = 1.5f;
     public float zMaxRange = 31.5f;
-    public GameObject spawnItem; // what prefab to spawn
+    public GameObject goldObject; // prefab to spawn
+    public GameObject[] gemObjects; // prefabs to spawn
     protected InterfaceManager im;
     private GameObject[] items;
-    private int goldSpawnNumber = 0;
+    private int numItemsSpawned = 0;
 
     void Awake()
     {
@@ -22,64 +23,87 @@ public class SpawnItems : MonoBehaviour
         }
     }
 
-    public void Spawn(int nItems)
+    public void SpawnGold(int nItems)
     {
-        Vector3[] spawnPositions = new Vector3[nItems];
         im.scriptedInput.ReportScriptedEvent("goldSpawned", new Dictionary<string, object> { { "nItems", nItems } });
-
-        for (int iPos = 0; iPos < nItems; iPos++)
+        for (int i = 0; i < nItems; i++)
         {
-            // Randomly generate a spawn position that doesn't collide with other objects
-            int nCollisions = 1;
-            while (nCollisions > 0)
-            {
-                spawnPositions[iPos].x = Random.Range(xMinRange, xMaxRange);
-                spawnPositions[iPos].y = 0.0f;
-                spawnPositions[iPos].z = Random.Range(zMinRange, zMaxRange);
+            SpawnItem(goldObject);
+        }
+    }
 
-                Collider[] hitColliders = Physics.OverlapBox(spawnPositions[iPos] + new Vector3(0.0f, 0.55f, 0.0f), 
-                                                             new Vector3(0.5f, 0.5f, 0.5f));
-                nCollisions = hitColliders.Length;
-            }
+    public void SpawnGems(int nItems)
+    {
+        if (nItems > gemObjects.Length)
+        {
+            im.Do(new EventBase<string, int>(im.ShowWarning, "The game is trying to spawn repeat gems. Please quit the game.", 5000));
+        }
 
-            // Spawn the game object
-            GameObject spawnedItem = Instantiate(spawnItem, spawnPositions[iPos], gameObject.transform.rotation) as GameObject;
-            goldSpawnNumber++;
-            spawnedItem.name = "gold";
-            spawnedItem.GetComponent<WorldDataReporter>().reportingID = "gold" + goldSpawnNumber.ToString("D4");
-            im.scriptedInput.ReportScriptedEvent("goldLocation", new Dictionary<string, object> { 
-                {"reportingId", spawnedItem.GetComponent<WorldDataReporter>().reportingID}, 
-                { "positionX", spawnPositions[iPos].x }, 
-                { "positionZ", spawnPositions[iPos].z } 
+        im.scriptedInput.ReportScriptedEvent("gemsSpawned", new Dictionary<string, object> { { "nItems", nItems } });
+        for (int i = 0; i < nItems; i++)
+        {
+            SpawnItem(gemObjects[i % gemObjects.Length]);
+        }
+    }
+
+    public void SpawnItem(GameObject item)
+    {
+        Vector3 spawnPosition = new Vector3();
+        string itemName = char.ToLowerInvariant(item.name[0]) + item.name.Substring(1);
+
+        // Randomly generate a spawn position that doesn't collide with other objects
+        int nCollisions = 1;
+        while (nCollisions > 0)
+        {
+            spawnPosition.x = Random.Range(xMinRange, xMaxRange);
+            spawnPosition.y = 0.0f;
+            spawnPosition.z = Random.Range(zMinRange, zMaxRange);
+
+            Collider[] hitColliders = Physics.OverlapBox(spawnPosition + new Vector3(0.0f, 0.55f, 0.0f),
+                                                         new Vector3(0.5f, 0.5f, 0.5f));
+            nCollisions = hitColliders.Length;
+        }
+
+        // Spawn the game object
+        GameObject spawnedItem = Instantiate(item, spawnPosition, gameObject.transform.rotation) as GameObject;
+        numItemsSpawned++;
+        spawnedItem.name = itemName;
+        spawnedItem.GetComponent<WorldDataReporter>().reportingID = itemName + numItemsSpawned.ToString("D4");
+        im.scriptedInput.ReportScriptedEvent(itemName + "Location", new Dictionary<string, object> {
+                {"reportingId", spawnedItem.GetComponent<WorldDataReporter>().reportingID},
+                { "positionX", spawnPosition.x },
+                { "positionZ", spawnPosition.z }
             });
 
+        // Make the parent the spawner so hierarchy doesn't get super messy
+        spawnedItem.transform.parent = gameObject.transform;
+    }
 
-            // Make the parent the spawner so hierarchy doesn't get super messy
-            spawnedItem.transform.parent = gameObject.transform;
-        }
+    public void HideItem(GameObject item)
+    {
+        item.GetComponent<Renderer>().enabled = false;
     }
 
     public void HideItems()
     {
-        Renderer rend;
-
         items = GameObject.FindGameObjectsWithTag("Pickups");
         foreach (GameObject item in items)
         {
-            rend = item.GetComponent<Renderer>();
-            rend.enabled = false;
+            HideItem(item);
         }
+    }
+
+    public void UnhideItem(GameObject item)
+    {
+        item.GetComponent<Renderer>().enabled = true;
     }
 
     public void UnhideItems()
     {
-        Renderer rend;
-
         items = GameObject.FindGameObjectsWithTag("Pickups");
         foreach (GameObject item in items)
         {
-            rend = item.GetComponent<Renderer>();
-            rend.enabled = true;
+            UnhideItem(item);
         }
     }
 

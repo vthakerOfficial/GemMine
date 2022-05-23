@@ -51,7 +51,7 @@ public class PeripheralInputReporter : DataReporter {
         manager = (InterfaceManager)mgr.GetComponent("InterfaceManager");
 
         if(!nativePluginRunning) {
-            OSStartTime = StartCocoaPlugin();
+            //OSStartTime = StartCocoaPlugin();
             nativePluginRunning = true;
         }
     }
@@ -164,7 +164,7 @@ public class PeripheralInputReporter : DataReporter {
     public void OnDestroy() {
         if(nativePluginRunning) {
             Debug.Log("stopping plugin");
-            StopCocoaPlugin();
+            //StopCocoaPlugin();
             nativePluginRunning = false;
         }
     }

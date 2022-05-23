@@ -252,7 +252,7 @@ class PracticeGameManager : GameManager {
         // Log
         im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "CheckGold1Dug" } });
 
-        if (state.goldFoundLastTrial == 0)
+        if (state.itemsFoundLastTrial == 0)
         {
             state.loopIndex = 0;
             gold1Box.SetActive(true);
@@ -301,23 +301,23 @@ class PracticeGameManager : GameManager {
         im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "InstantiateGold" } });
 
         // Destroy any existing gold objects
-        golds = GameObject.FindGameObjectsWithTag("Pickups");
-        for (int iGold = 0; iGold < golds.Length; iGold++)
+        var items = GameObject.FindGameObjectsWithTag("Pickups");
+        for (int iGold = 0; iGold < items.Length; iGold++)
         {
-            Destroy(golds[iGold]);
+            Destroy(items[iGold]);
         }
 
         // Create the new gold objects
-        gold1 = Instantiate(spawnGold.spawnItem, gold1Location.transform.position, gold1Location.transform.rotation) as GameObject;
-        gold2 = Instantiate(spawnGold.spawnItem, gold2Location.transform.position, gold2Location.transform.rotation) as GameObject;
-        gold3 = Instantiate(spawnGold.spawnItem, gold3Location.transform.position, gold3Location.transform.rotation) as GameObject;
+        gold1 = Instantiate(spawnItems.goldObject, gold1Location.transform.position, gold1Location.transform.rotation) as GameObject;
+        gold2 = Instantiate(spawnItems.goldObject, gold2Location.transform.position, gold2Location.transform.rotation) as GameObject;
+        gold3 = Instantiate(spawnItems.goldObject, gold3Location.transform.position, gold3Location.transform.rotation) as GameObject;
         gold1.name = "gold";
         gold2.name = "gold";
         gold3.name = "gold";
         gold1.SetActive(false);
         gold2.SetActive(false);
         gold3.SetActive(false);
-        goldToFind = 1;
+        itemsToFind = 1;
         gameEvents.Do(new EventBase(Run));
     }
 
@@ -348,7 +348,7 @@ class PracticeGameManager : GameManager {
 
         // Reveal gold in the environment
         gold1.SetActive(true);
-        spawnGold.UnhideItems();
+        spawnItems.UnhideItems();
 
         // Update canvas displays
         controlMainCanvas.SetTopDisplay("FIND 1 GOLD", "default", 0.75f);

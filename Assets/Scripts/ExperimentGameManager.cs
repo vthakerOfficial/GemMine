@@ -133,8 +133,8 @@ class ExperimentGameManager : GameManager {
         im.scriptedInput.ReportScriptedEvent("canvasActive", new Dictionary<string, object> { { "canvasName", "MainCanvas" }, { "isActive", false } });
         im.scriptedInput.ReportScriptedEvent("canvasActive", new Dictionary<string, object> { { "canvasName", "EndOfGameCanvas" }, { "isActive", true } });
         // Print end of game stats to the canvas
-        msg = (state.goldFoundTotal.ToString() + " (" + Math.Round(100f * state.goldFoundTotal / state.goldSpawnedTotal).ToString() + "%)\n" + // gold found (% of spawned gold found)
-               Math.Round(100f * state.goldFoundTotal / state.digsAttempted).ToString() + "%\n" + // digging accuracy
+        msg = (state.itemsFoundTotal.ToString() + " (" + Math.Round(100f * state.itemsFoundTotal / state.itemsSpawnedTotal).ToString() + "%)\n" + // gold found (% of spawned gold found)
+               Math.Round(100f * state.itemsFoundTotal / state.digsAttempted).ToString() + "%\n" + // digging accuracy
                state.score); // final score
         controlEndOfGameCanvas.SetStatDisplay(msg);
         controlEndOfGameCanvas.playAudio(true);
