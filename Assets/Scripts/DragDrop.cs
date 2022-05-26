@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class DragDrop : MonoBehaviour//, IPointerDownHandler, IBeginDragHandler, IEndDragHandler, IDragHandler
+public class DragDrop : MonoBehaviour
 {
     [SerializeField] private Camera camera;
 
@@ -26,36 +26,6 @@ public class DragDrop : MonoBehaviour//, IPointerDownHandler, IBeginDragHandler,
         originalPos = transform.position;
     }
 
-    //public void OnBeginDrag(PointerEventData eventData)
-    //{
-    //    Debug.Log("OnBeginDrag");
-    //    canvasGroup.blocksRaycasts = false;
-    //    canvasGroup.alpha = 0.6f;
-    //}
-
-    //public void OnEndDrag(PointerEventData eventData)
-    //{
-    //    Debug.Log("OnEndDrag");
-    //    //float ypos = slider.transform.position.y;
-    //    //transform.position = new Vector3(transform.position.x, ypos, transform.position.z);
-    //    canvasGroup.blocksRaycasts = true;
-    //    canvasGroup.alpha = 1f;
-    //}
-
-    //public void OnPointerDown(PointerEventData eventData)
-    //{
-    //    Debug.Log("OnPointerDown");
-    //}
-
-    //public void OnDrag(PointerEventData eventData)
-    //{
-    //    Vector3 delta = new Vector3(eventData.delta.x, eventData.delta.y, 0);
-    //    Vector3 screenPos = camera.WorldToScreenPoint(transform.position);
-    //    Vector3 newScreenPos = screenPos + delta;
-    //    Vector3 worldPos = camera.ScreenToWorldPoint(newScreenPos);
-    //    transform.position = worldPos;
-    //}
-
     private void OnMouseDown()
     {
         lastMousePos = camera.ScreenToWorldPoint(Input.mousePosition);
@@ -74,6 +44,7 @@ public class DragDrop : MonoBehaviour//, IPointerDownHandler, IBeginDragHandler,
         if (collidedItem != null)
         {
             collidedItem.GetComponent<ItemSlot>().SetItemPosition(transform);
+            Debug.Log(collidedItem.GetComponent<ItemSlot>().GetItemTimeNormalized(transform));
         }
         else
         {

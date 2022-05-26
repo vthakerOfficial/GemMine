@@ -7,7 +7,6 @@ class ExperimentGameManager : GameManager {
     public int numTrialsInGame = 36; // must be divisible by 6
     public GameObject scheduledPauseCanvas; 
     public GameObject endOfGameCanvas;
-    public GameObject timelineCanvas;
     private ControlEndOfGameCanvas controlEndOfGameCanvas;
     private byte[] bytes;
 

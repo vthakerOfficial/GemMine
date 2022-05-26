@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class ItemSlot : MonoBehaviour//, IDropHandler
+public class ItemSlot : MonoBehaviour
 {
     protected float xMin;
     protected float xMax;
@@ -26,6 +26,19 @@ public class ItemSlot : MonoBehaviour//, IDropHandler
         xPos = Mathf.Max(xMin, xPos);
 
         item.position = new Vector3(xPos, yPos, zPos);
+    }
+
+    public float GetItemTimeNormalized(Transform item)
+    {
+        if (item.position.y == transform.position.y)
+        {
+            float width = xMax - xMin;
+            return (item.position.x - xMin) / width;
+        }
+        else
+        {
+            return -1;
+        }
     }
 
 }

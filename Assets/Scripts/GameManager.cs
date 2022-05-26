@@ -311,10 +311,15 @@ public class GameManager : MonoBehaviour
         // Unlock the mouse
         im.LockCursor(CursorLockMode.None);
 
-        // TODO: JPB: This doesn't work
+        // Show the timeline
         timelineCanvas.SetActive(true);
 
-        gameEvents.DoIn(new EventBase(Run), taskDuration);
+        gameEvents.DoIn(new EventBase(
+            () => {
+                timelineCanvas.SetActive(false);
+                Run();
+            }),
+            taskDuration);
     }
 
     // Execute the retrieval interval
