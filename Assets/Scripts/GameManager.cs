@@ -21,6 +21,7 @@ public class GameManager : MonoBehaviour
     public GameObject mainCanvas; // the main canvas on which text is displayed
     public GameObject itemFoundEffect; // particle system that plays when player digs an item is found
     public GameObject itemNotFoundEffect; // particle system that plays when player digs an item is not found
+    public GameObject timelineCanvas;
     public AudioClip pointGainSFX; // sound that plays when points are added
     public AudioClip pointLossSFX; // sound that plays when points are subtracted
 
@@ -295,7 +296,27 @@ public class GameManager : MonoBehaviour
 
         gameEvents.DoIn(new EventBase(Run), taskDuration);
     }
-    
+
+    // Timeline
+    protected void Timeline()
+    {
+        Debug.Log("Timeline");
+
+        // Log
+        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "Timeline" } });
+
+        // Reset the player
+        FreezeAtBase();
+
+        // Unlock the mouse
+        im.LockCursor(CursorLockMode.None);
+
+        // TODO: JPB: This doesn't work
+        timelineCanvas.SetActive(true);
+
+        gameEvents.DoIn(new EventBase(Run), taskDuration);
+    }
+
     // Execute the retrieval interval
     protected void Retrieval() {
         // Log

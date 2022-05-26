@@ -6,7 +6,8 @@ using UnityEngine;
 class ExperimentGameManager : GameManager {
     public int numTrialsInGame = 36; // must be divisible by 6
     public GameObject scheduledPauseCanvas; 
-    public GameObject endOfGameCanvas; 
+    public GameObject endOfGameCanvas;
+    public GameObject timelineCanvas;
     private ControlEndOfGameCanvas controlEndOfGameCanvas;
     private byte[] bytes;
 
@@ -26,6 +27,7 @@ class ExperimentGameManager : GameManager {
 
         // List the trial events, in order
         stateMachine["Run"] = new List<Action> {
+            RunIndexWrapper(Timeline),
             RunIndexWrapper(InitTrial),
             RunIndexWrapper(PreEncodingDelayMsg),
             RunIndexWrapper(Delay),
@@ -52,6 +54,10 @@ class ExperimentGameManager : GameManager {
         controlMainCanvas.SetScoreDisplay(state.score.ToString(), "default", 0, false);
         controlEndOfGameCanvas = endOfGameCanvas.GetComponent<ControlEndOfGameCanvas>();
         trialDisplay.text = "TRIAL " + (state.trialsCompleted + 1).ToString();
+
+        // TODO: JPB: Testing (remove)
+        //InitTrial();
+        
 
         Run();
     }
