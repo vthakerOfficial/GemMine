@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class ItemSlot : MonoBehaviour
+public class ControlTimeline : MonoBehaviour
 {
     protected float xMin;
     protected float xMax;
@@ -43,13 +43,14 @@ public class ItemSlot : MonoBehaviour
     }
 
     // By default, this returns a normalized value (between 0 and 1)
-    public List<(GameObject, float)> GetItemTimes(float scale = 1)
+    // TODO: JPB: Add actualTime
+    public List<Dictionary<string, object>> GetItemTimes(float scale = 1)
     {
-        List<(GameObject, float)> items = new List<(GameObject, float)>();
+        var items = new List<Dictionary<string, object>>();
         foreach (var item in itemsOnTimeline)
         {
             float itemTime = GetItemTimeNormalized(item.transform) * scale;
-            items.Add((item, itemTime));
+            items.Add(new Dictionary<string, object> { { "name", item.name }, { "chosenTime", itemTime }, { "actualTime", 0 } });
         }
 
         return items;

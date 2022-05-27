@@ -78,10 +78,7 @@ public class ControlPlayer : MonoBehaviour
             // LockCursor(true);
 
             // Initiate pickup
-            if (GameManager.gm.pickupEnabled)
-            {
-                GameManager.gm.gameEvents.Do(new EventBase(GameManager.gm.PickupItem));
-            }
+            GameManager.gm.gameEvents.Do(new EventBase(GameManager.gm.PickupItem));
 
             // Initiate digging
             GameManager.gm.gameEvents.Do(new EventBase(GameManager.gm.DigForItem));

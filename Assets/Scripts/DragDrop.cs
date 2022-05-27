@@ -43,7 +43,7 @@ public class DragDrop : MonoBehaviour
     {
         if (collidedItem != null)
         {
-            collidedItem.GetComponent<ItemSlot>().SetItemPosition(transform);
+            collidedItem.GetComponent<ControlTimeline>().SetItemPosition(transform);
         }
         else
         {
@@ -53,7 +53,7 @@ public class DragDrop : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.GetComponent<ItemSlot>() != null)
+        if (other.gameObject.GetComponent<ControlTimeline>() != null)
         {
             collidedItem = other;
         }

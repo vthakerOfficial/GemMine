@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+using Newtonsoft.Json;
 
 public class GameManager : MonoBehaviour
 {
@@ -69,7 +70,7 @@ public class GameManager : MonoBehaviour
         gems
     }
     private ItemType itemType = ItemType.gems;
-    public bool pickupEnabled { get; private set; } = false;
+    public bool pickupSystemEnabled { get; private set; } = true;
     private System.Random rng = new System.Random();
 
 
@@ -283,7 +284,7 @@ public class GameManager : MonoBehaviour
 
         // Update canvas displays
         string itemTypeStr = Enum.GetName(itemType.GetType(), itemType);
-        if (pickupEnabled)
+        if (pickupSystemEnabled)
         {
             controlMainCanvas.SetTopDisplay("PICKUP" + itemTypeStr.ToUpper(), "default", 0.75f);
             controlMainCanvas.SetTaskDirectionsDisplay("PICKUP " + itemTypeStr.ToUpper() + ": " + itemsToFind.ToString() + " LEFT");
@@ -383,14 +384,10 @@ public class GameManager : MonoBehaviour
 
         gameEvents.DoIn(new EventBase(
             () => {
-                //im.scriptedInput.ReportScriptedEvent("timeline", new Dictionary<string, object> { {  } });
-                var temp = timelineCanvas.transform.Find("Timeline").GetComponent<ItemSlot>().GetItemTimes(taskDuration/1000);
-                //var timelineItems = new Dictionary
-                foreach (var (item, itemTime) in temp)
-                {
-                    Debug.Log(item.name + " " + itemTime);
-                }
+                var timelineItems = timelineCanvas.transform.Find("Timeline").GetComponent<ControlTimeline>().GetItemTimes(taskDuration/1000);
                 
+                im.scriptedInput.ReportScriptedEvent("timeline", new Dictionary<string, object> { { "items", timelineItems } });
+
                 timelineCanvas.SetActive(false);
                 Run();
             }),
@@ -550,7 +547,7 @@ public class GameManager : MonoBehaviour
 
     // Perform a pickup action (during encoding period only)
     public void PickupItem() {
-        if (!state.pickupEnabled)
+        if (!state.pickupEnabled || !pickupSystemEnabled)
         {
             return;
         }
