@@ -115,4 +115,10 @@ public class SpawnItems : MonoBehaviour
             Destroy(item);
         }
     }
+
+    public GameObject[] GetItems()
+    {
+        //items = GameObject.FindGameObjectsWithTag("Pickups");
+        return GameObject.FindGameObjectsWithTag("Pickups");
+    }
 }

@@ -2,6 +2,7 @@
 using System.Dynamic;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -61,12 +62,16 @@ public class GameManager : MonoBehaviour
 
     protected dynamic state;
 
+
+
     public enum ItemType {
         gold,
         gems
     }
     private ItemType itemType = ItemType.gems;
     public bool pickupEnabled { get; private set; } = false;
+    private System.Random rng = new System.Random();
+
 
     protected void Awake()
     {
@@ -265,8 +270,16 @@ public class GameManager : MonoBehaviour
         iDoors[state.doorIndex] = true;
         controlBase.OpenDoors(iDoors, true, true);
 
-        // Spawn gold in the environment
-        spawnItems.SpawnGold(itemsToFind);
+        // Spawn items in the environment
+        switch (itemType)
+        {
+            case ItemType.gold:
+                spawnItems.SpawnGold(itemsToFind);
+                break;
+            case ItemType.gems:
+                spawnItems.SpawnGems(itemsToFind);
+                break;
+        }
 
         // Update canvas displays
         string itemTypeStr = Enum.GetName(itemType.GetType(), itemType);
@@ -297,6 +310,21 @@ public class GameManager : MonoBehaviour
         gameEvents.DoIn(new EventBase(Run), taskDuration);
     }
 
+    protected void TempSpawnTimelineItem()
+    {
+        GameObject spawnedItem = Instantiate(spawnItems.gemObjects[0], new Vector3(0, 0, 0), gameObject.transform.rotation) as GameObject;
+        spawnedItem.name = spawnItems.gemObjects[0].name;
+        spawnedItem.transform.SetParent(timelineCanvas.transform, false);
+        spawnedItem.transform.localScale = spawnedItem.transform.localScale * 100;
+        spawnedItem.layer = LayerMask.NameToLayer("UI");
+        spawnedItem.GetComponent<Collider>().enabled = true;
+        spawnedItem.GetComponent<Collider>().isTrigger = true;
+        var dragDrop = spawnedItem.AddComponent<DragDrop>();
+        dragDrop.camera = GameObject.Find("Overlay Camera").GetComponent<Camera>();
+
+        spawnedItem.transform.Rotate(new Vector3(20, 0, 0));
+    }
+
     // Timeline
     protected void Timeline()
     {
@@ -308,6 +336,45 @@ public class GameManager : MonoBehaviour
         // Reset the player
         FreezeAtBase();
 
+
+        // Spawn the items
+        foreach (int i in Enumerable.Range(0, 8)) { TempSpawnTimelineItem(); }
+
+        var items = spawnItems.GetItems();
+
+        Vector3[] itemAreaCorners = new Vector3[4];
+        timelineCanvas.transform.Find("ItemArea").GetComponent<RectTransform>().GetWorldCorners(itemAreaCorners);
+        float xMin = itemAreaCorners[1].x; // x-coord of top left corner
+        float xMax = itemAreaCorners[2].x; // x-coord of top right corner
+        float yMin = itemAreaCorners[0].y; // y-coord of bottom left corner
+        float yMax = itemAreaCorners[1].y; // y-coord of top left corner
+        float width = xMax - xMin;
+        float height = yMax - yMin;
+
+        const int rows = 2;
+        int cols = Mathf.CeilToInt(items.Length / 2f);
+        int extra = items.Length % 2;
+
+        float xScale = width / (cols - 1);
+        float yScale = height / (rows - 1);
+
+        var positions = new List<Vector3>();
+        foreach (int i in Enumerable.Range(0, cols))
+        {
+            foreach (int j in Enumerable.Range(0, rows))
+            {
+                Vector3 offset = new Vector3(i * xScale, j * yScale, 0);
+                positions.Add(itemAreaCorners[0] + offset);
+            }
+        }
+
+        positions.Shuffle(rng);
+        foreach (int i in Enumerable.Range(0, items.Count()))
+        {
+            items[i].transform.position = positions[i];
+        }
+
+
         // Unlock the mouse
         im.LockCursor(CursorLockMode.None);
 
@@ -316,6 +383,14 @@ public class GameManager : MonoBehaviour
 
         gameEvents.DoIn(new EventBase(
             () => {
+                //im.scriptedInput.ReportScriptedEvent("timeline", new Dictionary<string, object> { {  } });
+                var temp = timelineCanvas.transform.Find("Timeline").GetComponent<ItemSlot>().GetItemTimes(taskDuration/1000);
+                //var timelineItems = new Dictionary
+                foreach (var (item, itemTime) in temp)
+                {
+                    Debug.Log(item.name + " " + itemTime);
+                }
+                
                 timelineCanvas.SetActive(false);
                 Run();
             }),
@@ -496,7 +571,7 @@ public class GameManager : MonoBehaviour
         }
 
         // Find closest item in the environment
-        var items = GameObject.FindGameObjectsWithTag("Pickups");
+        var items = spawnItems.GetItems();
         foreach (var item in items)
         {
             distance = ControlPlayer.EuclideanDistance(digCrosshair.transform, item.transform);
@@ -587,7 +662,7 @@ public class GameManager : MonoBehaviour
         }
 
         // Find closest item in the environment
-        var items = GameObject.FindGameObjectsWithTag("Pickups");
+        var items = spawnItems.GetItems();
         foreach (var item in items)
         {
             distance = ControlPlayer.EuclideanDistance(digCrosshair.transform, item.transform);
@@ -668,5 +743,25 @@ public class GameManager : MonoBehaviour
                 AudioSource.PlayClipAtPoint(pointLossSFX, player.transform.position, 0.15f);
             }
         }
+    }
+}
+
+public static class IListExtensions
+{
+    /// <summary>
+    /// Knuth (Fisher-Yates) Shuffle
+    /// Shuffles the element order of the specified list.
+    /// </summary>
+    public static IList<T> Shuffle<T>(this IList<T> list, System.Random rng)
+    {
+        var count = list.Count;
+        for (int i = 0; i < count; ++i)
+        {
+            int r = rng.Next(i, count);
+            T tmp = list[i];
+            list[i] = list[r];
+            list[r] = tmp;
+        }
+        return list;
     }
 }

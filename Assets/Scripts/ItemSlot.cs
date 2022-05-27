@@ -7,6 +7,7 @@ public class ItemSlot : MonoBehaviour
 {
     protected float xMin;
     protected float xMax;
+    protected List<GameObject> itemsOnTimeline = new List<GameObject>();
 
     void Start()
     {
@@ -41,4 +42,32 @@ public class ItemSlot : MonoBehaviour
         }
     }
 
+    // By default, this returns a normalized value (between 0 and 1)
+    public List<(GameObject, float)> GetItemTimes(float scale = 1)
+    {
+        List<(GameObject, float)> items = new List<(GameObject, float)>();
+        foreach (var item in itemsOnTimeline)
+        {
+            float itemTime = GetItemTimeNormalized(item.transform) * scale;
+            items.Add((item, itemTime));
+        }
+
+        return items;
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.GetComponent<DragDrop>() != null)
+        {
+            itemsOnTimeline.Add(other.gameObject);
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.gameObject.GetComponent<DragDrop>() != null)
+        {
+            itemsOnTimeline.Remove(other.gameObject);
+        }
+    }
 }

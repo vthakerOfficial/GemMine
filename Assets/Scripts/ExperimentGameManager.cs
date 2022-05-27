@@ -54,10 +54,6 @@ class ExperimentGameManager : GameManager {
         controlEndOfGameCanvas = endOfGameCanvas.GetComponent<ControlEndOfGameCanvas>();
         trialDisplay.text = "TRIAL " + (state.trialsCompleted + 1).ToString();
 
-        // TODO: JPB: Testing (remove)
-        //InitTrial();
-        
-
         Run();
     }
 

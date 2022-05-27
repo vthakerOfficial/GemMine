@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class DragDrop : MonoBehaviour
 {
-    [SerializeField] private Camera camera;
+    public Camera camera;
 
     protected Vector3 originalPos;
     protected Vector3 lastMousePos;
@@ -44,7 +44,6 @@ public class DragDrop : MonoBehaviour
         if (collidedItem != null)
         {
             collidedItem.GetComponent<ItemSlot>().SetItemPosition(transform);
-            Debug.Log(collidedItem.GetComponent<ItemSlot>().GetItemTimeNormalized(transform));
         }
         else
         {
