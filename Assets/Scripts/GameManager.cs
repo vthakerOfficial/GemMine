@@ -6,6 +6,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using Newtonsoft.Json;
+using System.Threading;
 
 public class GameManager : MonoBehaviour
 {
@@ -35,6 +36,8 @@ public class GameManager : MonoBehaviour
     public int wrongDigPenalty = -2; // penalty for digging in the wrong place
     public int goldFoundReward = 10; // points for each gold piece found
     public int gemFoundReward = 10; // points for each gem found
+    public int correctTimelineReward = 10; // points for each item correctly placed on timeline
+    public int wrongTimelinePenalty = -2; // penalty for each item incorrectly placed on timeline or items not placed on timeline when they should be
     public float maxDigDistance = 4f; // max distance player can dig from items to get points
     public int eventsPerFrame = 5;
     public bool playerActive = false; // whether the player is in an active task state or not
@@ -71,6 +74,7 @@ public class GameManager : MonoBehaviour
     }
     private ItemType itemType = ItemType.gems;
     public bool pickupSystemEnabled { get; private set; } = true;
+    public bool timedTrialSystemEnabled { get; private set; } = false;
     private System.Random rng = new System.Random();
 
 
@@ -192,7 +196,7 @@ public class GameManager : MonoBehaviour
         gameEvents.Do(new EventBase(Run));
     }
    
-    // Execute the delay interval 
+    // Execute the pre-encoding delay message 
     protected void PreEncodingDelayMsg()
     {
         // Log
@@ -205,7 +209,20 @@ public class GameManager : MonoBehaviour
         gameEvents.DoIn(new EventBase(Run), 2000);
     }
 
-    // Execute the delay interval 
+    // Execute the pre-encoding message 
+    protected void PreTimelineMsg()
+    {
+        // Log
+        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "PreTimelineMsg" } });
+
+        // Update canvas display
+        controlMainCanvas.ShowBackground(2f);
+        controlMainCanvas.SetCentralDisplay2("Get ready to\nplace items on timeline", "default", 2f);
+
+        gameEvents.DoIn(new EventBase(Run), 2000);
+    }
+
+    // Execute the pre-retrieval delay message
     protected void PreRetrievalDelayMsg()
     {
         // Log
@@ -311,38 +328,45 @@ public class GameManager : MonoBehaviour
         gameEvents.DoIn(new EventBase(Run), taskDuration);
     }
 
-    protected void TempSpawnTimelineItem()
+    public static void SetLayerRecursively(Transform obj, int layer)
     {
-        GameObject spawnedItem = Instantiate(spawnItems.gemObjects[0], new Vector3(0, 0, 0), gameObject.transform.rotation) as GameObject;
-        spawnedItem.name = spawnItems.gemObjects[0].name;
-        spawnedItem.transform.SetParent(timelineCanvas.transform, false);
-        spawnedItem.transform.localScale = spawnedItem.transform.localScale * 100;
-        spawnedItem.layer = LayerMask.NameToLayer("UI");
-        spawnedItem.GetComponent<Collider>().enabled = true;
-        spawnedItem.GetComponent<Collider>().isTrigger = true;
-        var dragDrop = spawnedItem.AddComponent<DragDrop>();
-        dragDrop.camera = GameObject.Find("Overlay Camera").GetComponent<Camera>();
+        obj.gameObject.layer = layer;
 
-        spawnedItem.transform.Rotate(new Vector3(20, 0, 0));
+        foreach (Transform child in obj)
+        {
+            SetLayerRecursively(child, layer);
+        }
     }
 
-    // Timeline
-    protected void Timeline()
+    protected GameObject[] GetTimelineItems()
     {
-        Debug.Log("Timeline");
+        return GameObject.FindGameObjectsWithTag("TimelineItem");
+    }
 
-        // Log
-        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "Timeline" } });
+    protected void SpawnTimelineItems()
+    {
+        foreach (var item in spawnItems.gemObjects)
+        {
+            GameObject spawnedItem = Instantiate(item, new Vector3(0, 0, 0), item.transform.rotation) as GameObject;
+            spawnedItem.name = item.name;
+            spawnedItem.transform.SetParent(timelineCanvas.transform, false);
+            spawnedItem.transform.localScale = spawnedItem.transform.localScale * 100;
+            spawnedItem.tag = "TimelineItem";
+            SetLayerRecursively(spawnedItem.transform, LayerMask.NameToLayer("UI"));
 
-        // Reset the player
-        FreezeAtBase();
+            spawnedItem.GetComponent<Collider>().enabled = true;
+            spawnedItem.GetComponent<Collider>().isTrigger = true;
+            var dragDrop = spawnedItem.AddComponent<DragDrop>();
+            dragDrop.camera = GameObject.Find("Overlay Camera").GetComponent<Camera>();
+        }
+    }
 
+    protected void MoveItemsToTimeline()
+    {
+        // Get items
+        var items = GetTimelineItems();
 
-        // Spawn the items
-        foreach (int i in Enumerable.Range(0, 8)) { TempSpawnTimelineItem(); }
-
-        var items = spawnItems.GetItems();
-
+        // Get space to put the items on timeline
         Vector3[] itemAreaCorners = new Vector3[4];
         timelineCanvas.transform.Find("ItemArea").GetComponent<RectTransform>().GetWorldCorners(itemAreaCorners);
         float xMin = itemAreaCorners[1].x; // x-coord of top left corner
@@ -352,13 +376,16 @@ public class GameManager : MonoBehaviour
         float width = xMax - xMin;
         float height = yMax - yMin;
 
+        // Control the rows and columns shown
         const int rows = 2;
         int cols = Mathf.CeilToInt(items.Length / 2f);
         int extra = items.Length % 2;
 
+        // Scale values for item placement
         float xScale = width / (cols - 1);
         float yScale = height / (rows - 1);
 
+        // Generate the positions
         var positions = new List<Vector3>();
         foreach (int i in Enumerable.Range(0, cols))
         {
@@ -369,26 +396,72 @@ public class GameManager : MonoBehaviour
             }
         }
 
+        // Randomize positions and move the items
         positions.Shuffle(rng);
         foreach (int i in Enumerable.Range(0, items.Count()))
         {
             items[i].transform.position = positions[i];
         }
+    }
 
+    protected void TimelineEnd()
+    {
+        // Report item times
+        var timelineItems = timelineCanvas.transform.Find("Timeline").GetComponent<ControlTimeline>().GetItemTimes(taskDuration / 1000);
+        im.scriptedInput.ReportScriptedEvent("timeline", new Dictionary<string, object> { { "items", timelineItems } });
+        //Debug.Log(JsonConvert.SerializeObject(new Dictionary<string, object> { { "items", timelineItems } }));
 
-        // Unlock the mouse
-        im.LockCursor(CursorLockMode.None);
+        // Update the score
+        var spawnedItems = spawnItems.GetItems();
+        foreach (var item in spawnItems.gemObjects)
+        {
+            bool isItemInTimeline = timelineItems.Any(x => (string)x["name"] == item.name);
+            bool isItemSpawned = spawnedItems.Any(x => x.name == item.name);
+
+            if (isItemSpawned && isItemInTimeline)
+            {
+                // Item correctly placed on timeline
+                UpdateScore(correctTimelineReward);
+            }
+            else if (!isItemSpawned && isItemInTimeline)
+            {
+                // Item incorrectly placed on timeline
+                UpdateScore(wrongTimelinePenalty);
+            }
+            else if (isItemSpawned && !isItemInTimeline)
+            {
+                // Item not placed on timeline when it should be
+                UpdateScore(wrongTimelinePenalty);
+            }
+        }
+
+        // Hide the timeline
+        timelineCanvas.SetActive(false);
+    }
+
+    // Timeline
+    protected void Timeline()
+    {
+        // Log
+        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "Timeline" } });
+
+        // Reset the player
+        FreezeAtBase();
 
         // Show the timeline
         timelineCanvas.SetActive(true);
 
+        // Spawn the timeline items
+
+        SpawnTimelineItems();
+        MoveItemsToTimeline();
+
+        // Unlock the mouse
+        im.LockCursor(CursorLockMode.None);
+
         gameEvents.DoIn(new EventBase(
             () => {
-                var timelineItems = timelineCanvas.transform.Find("Timeline").GetComponent<ControlTimeline>().GetItemTimes(taskDuration/1000);
-                
-                im.scriptedInput.ReportScriptedEvent("timeline", new Dictionary<string, object> { { "items", timelineItems } });
-
-                timelineCanvas.SetActive(false);
+                TimelineEnd();
                 Run();
             }),
             taskDuration);
@@ -552,9 +625,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        const float invalidDistance = -1;
-
-        float minDistance = invalidDistance;
+        float minDistance = float.MaxValue;
         float distance;
 
         // Register a dig
@@ -568,7 +639,7 @@ public class GameManager : MonoBehaviour
         }
 
         // Find closest item in the environment
-        var items = spawnItems.GetItems();
+        var items = spawnItems.GetVisibleItems();
         foreach (var item in items)
         {
             distance = ControlPlayer.EuclideanDistance(digCrosshair.transform, item.transform);
@@ -580,10 +651,8 @@ public class GameManager : MonoBehaviour
         }
 
         // Add or subtract points depending on whether dig was successful
-        if (minDistance >= 0 && minDistance <= maxDigDistance)
+        if (minDistance <= maxDigDistance)
         {
-            // TODO: JPB: Should there be a gold reward for collection?
-            //UpdateScore(goldFoundReward);
             im.scriptedInput.ReportScriptedEvent("pickup", new Dictionary<string, object> {{"successful", true},
                                                                                            {"distanceFromNearestItem", minDistance},
                                                                                            {"nearestItemPositionX", minDistanceItem.transform.position.x},
@@ -591,15 +660,14 @@ public class GameManager : MonoBehaviour
             state.itemsFoundLastTrial++;
             string itemTypeStr = Enum.GetName(itemType.GetType(), itemType);
             controlMainCanvas.SetTaskDirectionsDisplay("PICKUP "+ itemTypeStr.ToUpper() + ": " + (items.Length - 1).ToString() + " LEFT");
-            if (itemFoundEffect)
-            {
-                Instantiate(itemFoundEffect, minDistanceItem.transform.position, Quaternion.identity);
-            }
+            //if (itemFoundEffect)
+            //{
+            //    Instantiate(itemFoundEffect, minDistanceItem.transform.position, Quaternion.identity);
+            //}
             spawnItems.HideItem(minDistanceItem);
         }
-        else if (minDistance == invalidDistance) // i.e. all items have been dug
+        else if (items.Count() == 0) // i.e. all items have been dug
         {
-            //UpdateScore(wrongDigPenalty);
             im.scriptedInput.ReportScriptedEvent("pickup", new Dictionary<string, object> {{"successful", false},
                                                                                            {"distanceFromNearestItem", -1}, // these -1s are for finding instances but should be removed from analysis
                                                                                            {"nearestItemPositionX", -1},
@@ -612,7 +680,6 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            //UpdateScore(wrongDigPenalty);
             im.scriptedInput.ReportScriptedEvent("pickup", new Dictionary<string, object> {{"successful", false},
                                                                                            {"distanceFromNearestItem", minDistance},
                                                                                            {"nearestItemPositionX", minDistanceItem.transform.position.x},

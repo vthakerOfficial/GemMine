@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Pickups
   - InterfaceManager
+  - TimelineItem
   layers:
   - Default
   - TransparentFX

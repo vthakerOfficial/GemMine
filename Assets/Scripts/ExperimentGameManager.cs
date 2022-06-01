@@ -21,18 +21,23 @@ class ExperimentGameManager : GameManager {
         Debug.Log(bytes);
 
         // Setup random variables for the first trial
-        state.isTimedTrial = DoorShuffle.IsTimed(bytes[0]);
+        if (timedTrialSystemEnabled)
+        {
+            state.isTimedTrial = DoorShuffle.IsTimed(bytes[0]);
+        }
         state.doorIndex = DoorShuffle.DoorIndex(bytes[0]);
 
         // List the trial events, in order
         stateMachine["Run"] = new List<Action> {
             RunIndexWrapper(Timeline),
             RunIndexWrapper(InitTrial),
-            RunIndexWrapper(PreEncodingDelayMsg),
-            RunIndexWrapper(Delay),
+            //RunIndexWrapper(PreEncodingDelayMsg),
+            //RunIndexWrapper(Delay),
             RunIndexWrapper(Encoding),
             RunIndexWrapper(ReturnToBase),
             DoWaitForReturn,
+            RunIndexWrapper(PreTimelineMsg),
+            RunIndexWrapper(Timeline),
             RunIndexWrapper(PreRetrievalDelayMsg),
             RunIndexWrapper(Delay),
             RunIndexWrapper(Retrieval),
@@ -72,18 +77,25 @@ class ExperimentGameManager : GameManager {
         // Set up random variables for the next trial
         if (state.trialsCompleted < numTrialsInGame)
         {
-            state.isTimedTrial = DoorShuffle.IsTimed(bytes[state.trialsCompleted]);
+            if (timedTrialSystemEnabled)
+            {
+                state.isTimedTrial = DoorShuffle.IsTimed(bytes[state.trialsCompleted]);
+            }
+            
             state.doorIndex = DoorShuffle.DoorIndex(bytes[state.trialsCompleted]);
         }
         else
         {
-            if (UnityEngine.Random.value > 0.5f)
+            if (timedTrialSystemEnabled)
             {
-                state.isTimedTrial = true;
-            }
-            else
-            {
-                state.isTimedTrial = false;
+                if (UnityEngine.Random.value > 0.5f)
+                {
+                    state.isTimedTrial = true;
+                }
+                else
+                {
+                    state.isTimedTrial = false;
+                }
             }
 
             state.doorIndex = UnityEngine.Random.Range(0, 3);

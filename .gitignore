@@ -77,6 +77,8 @@ crashlytics-build.properties
 # Textures which are too big for github
 Assets/Metal textures pack
 Assets/Rocks and Boulders 2
+Assets/Ultimate Gems and Coins _Vol1
+Assets/Gems pack (TinkiVinki)
 
 # Streaming Assets
 Assets/StreamingAssets/*

@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class SpawnItems : MonoBehaviour
@@ -13,6 +14,7 @@ public class SpawnItems : MonoBehaviour
     protected InterfaceManager im;
     private GameObject[] items;
     private int numItemsSpawned = 0;
+    private System.Random rng = new System.Random();
 
     void Awake()
     {
@@ -40,9 +42,11 @@ public class SpawnItems : MonoBehaviour
         }
 
         im.scriptedInput.ReportScriptedEvent("gemsSpawned", new Dictionary<string, object> { { "nItems", nItems } });
+        var indices = Enumerable.Range(0, gemObjects.Length).ToList();
+        indices.Shuffle(rng);
         for (int i = 0; i < nItems; i++)
         {
-            SpawnItem(gemObjects[i % gemObjects.Length]);
+            SpawnItem(gemObjects[indices[i]]);
         }
     }
 
@@ -56,7 +60,7 @@ public class SpawnItems : MonoBehaviour
         while (nCollisions > 0)
         {
             spawnPosition.x = Random.Range(xMinRange, xMaxRange);
-            spawnPosition.y = 0.0f;
+            spawnPosition.y = item.transform.GetComponent<BoxCollider>().size.y / 2;
             spawnPosition.z = Random.Range(zMinRange, zMaxRange);
 
             Collider[] hitColliders = Physics.OverlapBox(spawnPosition + new Vector3(0.0f, 0.55f, 0.0f),
@@ -65,9 +69,9 @@ public class SpawnItems : MonoBehaviour
         }
 
         // Spawn the game object
-        GameObject spawnedItem = Instantiate(item, spawnPosition, gameObject.transform.rotation) as GameObject;
+        GameObject spawnedItem = Instantiate(item, spawnPosition, item.transform.rotation) as GameObject;
         numItemsSpawned++;
-        spawnedItem.name = itemName;
+        spawnedItem.name = item.name;
         spawnedItem.GetComponent<WorldDataReporter>().reportingID = itemName + numItemsSpawned.ToString("D4");
         im.scriptedInput.ReportScriptedEvent(itemName + "Location", new Dictionary<string, object> {
                 {"reportingId", spawnedItem.GetComponent<WorldDataReporter>().reportingID},
@@ -81,7 +85,7 @@ public class SpawnItems : MonoBehaviour
 
     public void HideItem(GameObject item)
     {
-        item.GetComponent<Renderer>().enabled = false;
+        item.GetComponentInChildren<Renderer>().enabled = false;
     }
 
     public void HideItems()
@@ -95,7 +99,7 @@ public class SpawnItems : MonoBehaviour
 
     public void UnhideItem(GameObject item)
     {
-        item.GetComponent<Renderer>().enabled = true;
+        item.GetComponentInChildren<Renderer>().enabled = true;
     }
 
     public void UnhideItems()
@@ -120,5 +124,13 @@ public class SpawnItems : MonoBehaviour
     {
         //items = GameObject.FindGameObjectsWithTag("Pickups");
         return GameObject.FindGameObjectsWithTag("Pickups");
+    }
+
+    public GameObject[] GetVisibleItems()
+    {
+        //items = GameObject.FindGameObjectsWithTag("Pickups");
+        return GameObject.FindGameObjectsWithTag("Pickups")
+            .Where(x => x.GetComponentInChildren<Renderer>().enabled)
+            .ToArray();
     }
 }

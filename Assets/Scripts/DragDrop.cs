@@ -20,8 +20,9 @@ public class DragDrop : MonoBehaviour
 
     void Start()
     {
-        transform.GetComponent<BoxCollider>().enabled = true;
-        transform.GetComponent<BoxCollider>().isTrigger = true;
+        var boxCollider = transform.GetComponent<BoxCollider>();
+        boxCollider.enabled = true;
+        boxCollider.isTrigger = true;
 
         originalPos = transform.position;
     }
