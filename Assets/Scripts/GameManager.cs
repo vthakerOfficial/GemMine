@@ -10,6 +10,8 @@ using System.Threading;
 
 public class GameManager : MonoBehaviour
 {
+    // Version number
+    const string TASK_VERSION = "Goldmine-2.0.0-Beta0";
 
     // Singleton Boilerplate
     public static GameManager gm;
@@ -29,8 +31,9 @@ public class GameManager : MonoBehaviour
     public AudioClip pointLossSFX; // sound that plays when points are subtracted
 
     // TODO: move to config file?
-    public int itemsToFind = 1; // how many items are placed in the environment
+    public int itemsToFind = 2; // how many items are placed in the environment
     public int delayDuration = 10000; // duration of the delay phases
+    public int timelineDuration = 18000; // duration of the timeline phase
     public int taskDuration = 30000; // duration of the task phases (encoding, retrieval)
     public int returnToBasePenalty = -5; // penalty for not returning to the base in time
     public int wrongDigPenalty = -2; // penalty for digging in the wrong place
@@ -84,7 +87,7 @@ public class GameManager : MonoBehaviour
         CollectReferences();
     }
 
-    protected virtual void Start() {   
+    protected virtual void Start() {
         gameEvents = new EventQueue();
         stateMachine = new Dictionary<string, List<Action>>();
         state = new ExpandoObject();
@@ -105,6 +108,9 @@ public class GameManager : MonoBehaviour
         state.itemsSpawnedTotal = 0; // how many gold items were spawned across all trials
         state.pickupsAttempted = 0; // how many times the player tried to pickup an item
         state.digsAttempted = 0; // how many times the player has dug for an item
+
+        // Report version info
+        im.scriptedInput.ReportScriptedEvent("versions", new Dictionary<string, object> { {"taskVersion", TASK_VERSION} });
 
         gameEvents.Pause(false);
     }
@@ -322,6 +328,7 @@ public class GameManager : MonoBehaviour
         //    controlMainCanvas.SetTimedTrialDisplay("NO TIME PENALTY", "positive");
         //}
 
+        // Display countdown
         state.timeLeft = taskDuration;
         state.showCountdown = true;
 
@@ -407,7 +414,7 @@ public class GameManager : MonoBehaviour
     protected void TimelineEnd()
     {
         // Report item times
-        var timelineItems = timelineCanvas.transform.Find("Timeline").GetComponent<ControlTimeline>().GetItemTimes(taskDuration / 1000);
+        var timelineItems = timelineCanvas.transform.Find("Timeline").GetComponent<ControlTimeline>().GetItemTimes(timelineDuration / 1000);
         im.scriptedInput.ReportScriptedEvent("timeline", new Dictionary<string, object> { { "items", timelineItems } });
         //Debug.Log(JsonConvert.SerializeObject(new Dictionary<string, object> { { "items", timelineItems } }));
 
@@ -459,12 +466,16 @@ public class GameManager : MonoBehaviour
         // Unlock the mouse
         im.LockCursor(CursorLockMode.None);
 
+        // Display countdown
+        state.timeLeft = taskDuration;
+        state.showCountdown = true;
+
         gameEvents.DoIn(new EventBase(
             () => {
                 TimelineEnd();
                 Run();
             }),
-            taskDuration);
+            timelineDuration);
     }
 
     // Execute the retrieval interval

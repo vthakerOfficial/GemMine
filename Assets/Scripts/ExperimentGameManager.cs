@@ -29,10 +29,9 @@ class ExperimentGameManager : GameManager {
 
         // List the trial events, in order
         stateMachine["Run"] = new List<Action> {
-            RunIndexWrapper(Timeline),
             RunIndexWrapper(InitTrial),
-            //RunIndexWrapper(PreEncodingDelayMsg),
-            //RunIndexWrapper(Delay),
+            RunIndexWrapper(PreEncodingDelayMsg),
+            RunIndexWrapper(Delay),
             RunIndexWrapper(Encoding),
             RunIndexWrapper(ReturnToBase),
             DoWaitForReturn,
