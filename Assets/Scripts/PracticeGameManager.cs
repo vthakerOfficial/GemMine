@@ -20,7 +20,8 @@ class PracticeGameManager : GameManager {
 
     private Dictionary<string, string> tutorial = new Dictionary<string, string>
     {
-        {"welcome", "Welcome to Goldmine!\n\nIn this game, you will be searching and then digging for gold over a number of rounds.\n\nPlease ask questions as we go through this tutorial.\n\n(Press space to continue)"},
+        {"welcome gold", "Welcome to Goldmine!\n\nIn this game, you will be searching and then digging for gold over a number of rounds.\n\nPlease ask questions as we go through this tutorial.\n\n(Press space to continue)"},
+        {"welcome items", "Welcome to Goldmine!\n\nIn this game, you will be searching and then digging for items over a number of rounds.\n\nPlease ask questions as we go through this tutorial.\n\n(Press space to continue)"},
         {"instruct pickup gold", "Each round begins here in the mine base. First, you will have 30 seconds to search for one or more pieces of gold that appear on the ground in the mine ('search' trials). Try to remember where each gold piece is, as you will need to return there later.\n\nAfter 30 seconds, the gold will disappear, and you will be asked to go back to the base."},
         {"instruct pickup items", "Each round begins here in the mine base. First, you will have 30 seconds to search for one or more items that appear on the ground in the mine ('search' trials). Also, try to remember where each item is, as you will need to return there later.\n\nAfter 30 seconds, the item will disappear, and you will be asked to go back to the base."},
         {"instruct timeline gold", "Next, you will have another 18 seconds to place the gold that you picked up onto a timeline ('Timeline' trials). Try to place the gold pieces on the timeline at the time you found them."},
@@ -29,10 +30,10 @@ class PracticeGameManager : GameManager {
         {"instruct digging items", "Finally, you will have another 30 seconds to go back into the mine and try to dig up the items that you just found ('Digging' trials). This time the items will be hidden from view, so you have to dig at the place where you remember it being."},
         {"instruct delay gold", "Before each trial, there is a short waiting time in the base, during which you are asked to prepare for the next trial.\n\nIn the waiting time before Digging trials, please try to visualize a path back to the gold that you are intending to dig.\n\nAfter the waiting time, a door will open to your left, right, or center and let you out into the mine. Only one door will open to let you out of the base, but you can re-enter through any door."},
         {"instruct delay items", "Before each trial, there is a short waiting time in the base, during which you are asked to prepare for the next trial.\n\nIn the waiting time before Digging trials, please try to visualize a path back to the items that you are intending to dig.\n\nAfter the waiting time, a door will open to your left, right, or center and let you out into the mine. Only one door will open to let you out of the base, but you can re-enter through any door."},
-        {"instruct scoring gold", "SCORING\n\nThe goal of this game is to get as many points as you can.\n\n> " + (timelineSystemEnabled ? "Placing a gold piece on the timeline that was picked up is worth +10 points\n>  Placing a gold piece on the timeline that was not picked up costs -2 points. \n>  Not placing a gold piece on the timeline that was picked up costs -2 points.\n\n" : "") + ">  Digging at a correct gold location is worth +10 points\n>  Digging at an incorrect location costs -2 points\n\n"},
-        {"instruct scoring items", "SCORING\n\nThe goal of this game is to get as many points as you can.\n\n> " + (timelineSystemEnabled ? "Placing an item on the timeline that was picked up is worth +10 points\n>  Placing an item on the timeline that was not picked up costs -2 points. \n>  Not placing an item on the timeline that was picked up costs -2 points.\n\n" : "") + ">  Digging at a correct item location is worth +10 points\n>  Digging at an incorrect location costs -2 points\n\n"},
-        {"instruct controls gold", "GAME CONTROLS\n\n>  Rotate your view by moving the mouse\n>  Move forward by clicking and holding the left mouse button\n" + (pickupSystemEnabled ? "Pickup a gold piece by pressing the spacebar" : "") + ">  Dig by pressing the spacebar (1 keypress = 1 dig)"},
-        {"instruct controls items", "GAME CONTROLS\n\n>  Rotate your view by moving the mouse\n>  Move forward by clicking and holding the left mouse button\n" + (pickupSystemEnabled ? "Pickup an item by pressing the spacebar" : "") + ">  Dig by pressing the spacebar (1 keypress = 1 dig)"},
+        {"instruct scoring gold", "SCORING\n\nThe goal of this game is to get as many points as you can.\n\n" + (timelineSystemEnabled ? ">  Placing a gold piece on the timeline that was picked up is worth +10 points\n>  Placing a gold piece on the timeline that was not picked up costs -2 points. \n>  Not placing a gold piece on the timeline that was picked up costs -2 points.\n\n" : "") + ">  Digging at a correct gold location is worth +10 points\n>  Digging at an incorrect location costs -2 points\n\n"},
+        {"instruct scoring items", "SCORING\n\nThe goal of this game is to get as many points as you can.\n\n" + (timelineSystemEnabled ? ">  Placing an item on the timeline that was picked up is worth +10 points\n>  Placing an item on the timeline that was not picked up costs -2 points. \n>  Not placing an item on the timeline that was picked up costs -2 points.\n\n" : "") + ">  Digging at a correct item location is worth +10 points\n>  Digging at an incorrect location costs -2 points\n\n"},
+        {"instruct controls gold", "GAME CONTROLS\n\n>  Rotate your view by moving the mouse\n>  Move forward by clicking and holding the left mouse button\n" + (pickupSystemEnabled ? ">  Pickup a gold piece by pressing the spacebar\n" : "") + ">  Dig by pressing the spacebar (1 keypress = 1 dig)"},
+        {"instruct controls items", "GAME CONTROLS\n\n>  Rotate your view by moving the mouse\n>  Move forward by clicking and holding the left mouse button\n" + (pickupSystemEnabled ? ">  Pickup an item by pressing the spacebar\n" : "") + ">  Dig by pressing the spacebar (1 keypress = 1 dig)"},
         {"instruct hud", "TASK TOOLBAR\n\nA toolbar at the top of your screen shows your current instructions (top left) and score (top right)."},
         {"instruct final", "Let's do one round now for practice. Remember, we will start with the searching trial."},
         {"pickup gold", "Pickup trial: There is a crosshair on the ground in front of you that shows where you are aiming, and you can press the spacebar when you are ready to pickup a piece of gold."},
@@ -46,7 +47,7 @@ class PracticeGameManager : GameManager {
         {"trial 1 end items", "You completed one round! Let's try one more. This time, a right arrow will appear on your screen at the end of the waiting time to tell you that the right door has opened for this round.\n\nNote: you don’t need to remember the location of items from the previous round to the next one."},
         {"trial 2 end", "Well done! We will do a final practice round now before starting the real game.\n\n"},
         {"time penalty", "There's one last thing to know. Some rounds (like this one) have a time penalty. This means that if you are not back at the base after 30 seconds, you will lose 5 points.\n\nSince there is no explicit timer, you will have to keep track of how much time has passed in your head."},
-        {"no time penalty", "On rounds that don't have a time penalty, you can spend the whole 30 seconds searching or digging for gold without worrying about the time.\n\n"},
+        {"no time penalty", "On rounds that don't have a time penalty, you can spend the whole 30 seconds searching or digging without worrying about the time.\n\n"},
         {"repeat or not", "Great job! Press space to move on or r to repeat this tutorial."},
         {"tutorial end 1", "The full game lasts for 36 rounds, with breaks after 12 and 24 rounds. You can press p to pause at any point if you need to."},
         {"tutorial end 2", "Please try not to talk during the experiment. You should keep your head and arms as still as possible, and stay focused on the game even during the waiting periods in the base.\n\nThank you for your participation, and good luck!"},
@@ -64,173 +65,210 @@ class PracticeGameManager : GameManager {
 
         FreezeAtBase();
 
-        string itemName = itemType == ItemType.gold ? "gold" : "items";
+        string itemTypeStr = itemType == ItemType.gold ? "gold" : "items";
 
         // Setup "Run" state machine
         stateMachine["Run"] = new List<Action>();
 
-        //switch (itemType)
-        //{
-        //    case ItemType.gold:
-        //        stateMachine["Run"].AddRange(new List<Action> {
-        //            RunIndexWrapper(InstantiateGold),
+        switch (itemType)
+        {
+            case ItemType.gems:
+                stateMachine["Run"].AddRange(new List<Action> {
+                    RunIndexWrapper(InstantiateGold),
 
-        //            WriteToCanvas("welcome"),
-        //            WriteToCanvas("instruct pickup gold"),
-        //            timelineSystemEnabled ?
-        //                WriteToCanvas("instruct timeline gold") :
-        //                Nop(),
-        //            WriteToCanvas("instruct digging gold"),
-        //            WriteToCanvas("instruct delay gold"),
-        //            WriteToCanvas("instruct scoring gold"),
-        //            WriteToCanvas("instruct controls gold"),
-        //            WriteToCanvas("instruct hud"),
-        //            WriteToCanvas("instruct final"),
+                    // Instructions
+                    WriteToCanvas("welcome " + itemTypeStr),
+                    WriteToCanvas("instruct pickup " + itemTypeStr),
+                    timelineSystemEnabled ?
+                        WriteToCanvas("instruct timeline gold") :
+                        Nop(),
+                    WriteToCanvas("instruct digging gold"),
+                    WriteToCanvas("instruct delay gold"),
+                    WriteToCanvas("instruct scoring gold"),
+                    WriteToCanvas("instruct controls gold"),
+                    WriteToCanvas("instruct hud"),
+                    WriteToCanvas("instruct final"),
 
-        //            RunIndexWrapper(PreEncodingDelayMsg),
-        //            RunIndexWrapper(Delay),
-        //            pickupSystemEnabled ?
-        //                WriteToCanvas("pickup gold") :
-        //                Nop(),
+                    RunIndexWrapper(PreEncodingDelayMsg),
+                    RunIndexWrapper(Delay),
+                    pickupSystemEnabled ?
+                        WriteToCanvas("pickup gold") :
+                        Nop(),
 
-        //            RunIndexWrapper(TutorialEncoding1),
-        //            WriteToCanvas("encoding 1 end"),
-        //            RunIndexWrapper(ReturnToBase),
-        //            DoWaitForReturn,
-        //            timelineSystemEnabled ?
-        //                WriteToCanvas("timeline gold") :
-        //                Nop(),
-        //            timelineSystemEnabled ?
-        //                RunIndexWrapper(Timeline) :
-        //                Nop(),
-        //            RunIndexWrapper(PreRetrievalDelayMsg),
-        //            RunIndexWrapper(Delay),
-        //            WriteToCanvas("digging gold"),
-        //            RunIndexWrapper(Retrieval),
-        //            RunIndexWrapper(ReturnToBase),
-        //            DoWaitForReturn,
-        //            WriteToCanvas("trial 1 end"),
+                    // Practice trial 1
+                    RunIndexWrapper(TutorialEncoding1),
+                    WriteToCanvas("encoding 1 end"),
+                    RunIndexWrapper(ReturnToBase),
+                    DoWaitForReturn,
+                    timelineSystemEnabled ?
+                        WriteToCanvas("timeline gold") :
+                        Nop(),
+                    timelineSystemEnabled ?
+                        RunIndexWrapper(Timeline) :
+                        Nop(),
+                    RunIndexWrapper(PreRetrievalDelayMsg),
+                    RunIndexWrapper(Delay),
+                    WriteToCanvas("digging gold"),
+                    RunIndexWrapper(Retrieval),
+                    RunIndexWrapper(ReturnToBase),
+                    DoWaitForReturn,
+                    WriteToCanvas("trial 1 end gold"),
 
+                    // Practice trial 2
+                    RunIndexWrapper(PreEncodingDelayMsg),
+                    RunIndexWrapper(Delay),
+                    RunIndexWrapper(TutorialEncoding2),
+                    RunIndexWrapper(ReturnToBase),
+                    DoWaitForReturn,
+                    timelineSystemEnabled ?
+                        RunIndexWrapper(Timeline) :
+                        Nop(),
+                    RunIndexWrapper(PreRetrievalDelayMsg),
+                    RunIndexWrapper(Delay),
+                    RunIndexWrapper(Retrieval),
+                    RunIndexWrapper(ReturnToBase),
+                    DoWaitForReturn,
 
-        //        });
-        //        break;
-        //    default:
+                    // Practice trial 3
+                    WriteToCanvas("trial 2 end"),
+                    RunIndexWrapper(PreEncodingDelayMsg),
+                    RunIndexWrapper(Delay),
+                    WriteToCanvas("time penalty"),
+                    WriteToCanvas("no time penalty"),
+                    RunIndexWrapper(TutorialEncoding3),
+                    RunIndexWrapper(ReturnToBase),
+                    DoWaitForReturn,
+                    timelineSystemEnabled ?
+                        RunIndexWrapper(Timeline) :
+                        Nop(),
+                    RunIndexWrapper(PreRetrievalDelayMsg),
+                    RunIndexWrapper(Delay),
+                    RunIndexWrapper(Retrieval),
+                    RunIndexWrapper(ReturnToBase),
+                    DoWaitForReturn,
+                    DoRepeatOrContinue,
+                    WriteToCanvas("tutorial end 1"),
+                    WriteToCanvas("tutorial end 2"),
+                    LaunchExperiment
+                });
+                break;
+            default:
+                break;
+        }
 
+        //stateMachine["Run"] = new List<Action> {
+        //    RunIndexWrapper(InstantiateGold),
+        //    WriteToCanvas("welcome"),
+        //    itemType == ItemType.gold ?
+        //        WriteToCanvas("instruct pickup gold") :
+        //        WriteToCanvas("instruct pickup items"),
+        //};
+
+        //if (timelineSystemEnabled) {
+
+        //    stateMachine["Run"].AddRange(new List<Action> {
+        //        itemType == ItemType.gold ?
+        //            WriteToCanvas("instruct timeline gold") :
+        //            WriteToCanvas("instruct timeline items")
+        //    });
         //}
 
-        stateMachine["Run"] = new List<Action> {
-            RunIndexWrapper(InstantiateGold),
-            WriteToCanvas("welcome"),
-            itemType == ItemType.gold ?
-                WriteToCanvas("instruct pickup gold") :
-                WriteToCanvas("instruct pickup items"),
-        };
+        //stateMachine["Run"].AddRange(new List<Action> {
+        //    itemType == ItemType.gold ?
+        //        WriteToCanvas("instruct digging gold") :
+        //        WriteToCanvas("instruct digging items"),
+        //    itemType == ItemType.gold ?
+        //        WriteToCanvas("instruct delay gold") :
+        //        WriteToCanvas("instruct delay items"),
+        //    itemType == ItemType.gold ?
+        //        WriteToCanvas("instruct scoring gold") :
+        //        WriteToCanvas("instruct scoring items"),
+        //    itemType == ItemType.gold ?
+        //        WriteToCanvas("instruct controls gold") :
+        //        WriteToCanvas("instruct controls items"),
+        //    WriteToCanvas("instruct hud"),
+        //    WriteToCanvas("instruct final"),
+        //    RunIndexWrapper(PreEncodingDelayMsg),
+        //    RunIndexWrapper(Delay),
+        //});
 
-        if (timelineSystemEnabled) {
+        //if (pickupSystemEnabled)
+        //{
+        //    stateMachine["Run"].AddRange(new List<Action> {
+        //        itemType == ItemType.gold ?
+        //            WriteToCanvas("pickup gold") :
+        //            WriteToCanvas("pickup items")
+        //    });
+        //}
 
-            stateMachine["Run"].AddRange(new List<Action> {
-                itemType == ItemType.gold ?
-                    WriteToCanvas("instruct timeline gold") :
-                    WriteToCanvas("instruct timeline items")
-            });
-        }
+        //stateMachine["Run"].AddRange(new List<Action> {
+        //    RunIndexWrapper(TutorialEncoding1),
+        //    WriteToCanvas("encoding 1 end"),
+        //    RunIndexWrapper(ReturnToBase),
+        //    DoWaitForReturn,
+        //});
 
-        stateMachine["Run"].AddRange(new List<Action> {
-            itemType == ItemType.gold ?
-                WriteToCanvas("instruct digging gold") :
-                WriteToCanvas("instruct digging items"),
-            itemType == ItemType.gold ?
-                WriteToCanvas("instruct delay gold") :
-                WriteToCanvas("instruct delay items"),
-            itemType == ItemType.gold ?
-                WriteToCanvas("instruct scoring gold") :
-                WriteToCanvas("instruct scoring items"),
-            itemType == ItemType.gold ?
-                WriteToCanvas("instruct controls gold") :
-                WriteToCanvas("instruct controls items"),
-            WriteToCanvas("instruct hud"),
-            WriteToCanvas("instruct final"),
-            RunIndexWrapper(PreEncodingDelayMsg),
-            RunIndexWrapper(Delay),
-        });
+        //if (timelineSystemEnabled) {
+        //    stateMachine["Run"].AddRange(new List<Action> {
+        //        WriteToCanvas("timeline"),
+        //        RunIndexWrapper(Timeline),
+        //    });
+        //}
 
-        if (pickupSystemEnabled)
-        {
-            stateMachine["Run"].AddRange(new List<Action> {
-                itemType == ItemType.gold ?
-                    WriteToCanvas("pickup gold") :
-                    WriteToCanvas("pickup items")
-            });
-        }
+        //stateMachine["Run"].AddRange(new List<Action> {
+        //    RunIndexWrapper(PreRetrievalDelayMsg),
+        //    RunIndexWrapper(Delay),
+        //    WriteToCanvas("digging"),
+        //    RunIndexWrapper(Retrieval),
+        //    RunIndexWrapper(ReturnToBase),
+        //    DoWaitForReturn,
+        //    WriteToCanvas("trial 1 end"),
 
-        stateMachine["Run"].AddRange(new List<Action> {
-            RunIndexWrapper(TutorialEncoding1),
-            WriteToCanvas("encoding 1 end"),
-            RunIndexWrapper(ReturnToBase),
-            DoWaitForReturn,
-        });
+        //    RunIndexWrapper(PreEncodingDelayMsg),
+        //    RunIndexWrapper(Delay),
+        //    RunIndexWrapper(TutorialEncoding2),
+        //    RunIndexWrapper(ReturnToBase),
+        //    DoWaitForReturn,
+        //});
 
-        if (timelineSystemEnabled) {
-            stateMachine["Run"].AddRange(new List<Action> {
-                WriteToCanvas("timeline"),
-                RunIndexWrapper(Timeline),
-            });
-        }
+        //if (timelineSystemEnabled)
+        //{
+        //    stateMachine["Run"].Add(RunIndexWrapper(Timeline));
+        //}
 
-        stateMachine["Run"].AddRange(new List<Action> {
-            RunIndexWrapper(PreRetrievalDelayMsg),
-            RunIndexWrapper(Delay),
-            WriteToCanvas("digging"),
-            RunIndexWrapper(Retrieval),
-            RunIndexWrapper(ReturnToBase),
-            DoWaitForReturn,
-            WriteToCanvas("trial 1 end"),
+        //stateMachine["Run"].AddRange(new List<Action> {
+        //    RunIndexWrapper(PreRetrievalDelayMsg),
+        //    RunIndexWrapper(Delay),
+        //    RunIndexWrapper(Retrieval),
+        //    RunIndexWrapper(ReturnToBase),
+        //    DoWaitForReturn,
+        //    WriteToCanvas("trial 2 end"),
 
-            RunIndexWrapper(PreEncodingDelayMsg),
-            RunIndexWrapper(Delay),
-            RunIndexWrapper(TutorialEncoding2),
-            RunIndexWrapper(ReturnToBase),
-            DoWaitForReturn,
-        });
+        //    RunIndexWrapper(PreEncodingDelayMsg),
+        //    RunIndexWrapper(Delay),
+        //    WriteToCanvas("time penalty"),
+        //    WriteToCanvas("no time penalty"),
+        //    RunIndexWrapper(TutorialEncoding3),
+        //    RunIndexWrapper(ReturnToBase),
+        //    DoWaitForReturn,
+        //    });
 
-        if (timelineSystemEnabled)
-        {
-            stateMachine["Run"].Add(RunIndexWrapper(Timeline));
-        }
+        //if (timelineSystemEnabled)
+        //{
+        //    stateMachine["Run"].Add(RunIndexWrapper(Timeline));
+        //}
 
-        stateMachine["Run"].AddRange(new List<Action> {
-            RunIndexWrapper(PreRetrievalDelayMsg),
-            RunIndexWrapper(Delay),
-            RunIndexWrapper(Retrieval),
-            RunIndexWrapper(ReturnToBase),
-            DoWaitForReturn,
-            WriteToCanvas("trial 2 end"),
-
-            RunIndexWrapper(PreEncodingDelayMsg),
-            RunIndexWrapper(Delay),
-            WriteToCanvas("time penalty"),
-            WriteToCanvas("no time penalty"),
-            RunIndexWrapper(TutorialEncoding3),
-            RunIndexWrapper(ReturnToBase),
-            DoWaitForReturn,
-            });
-
-        if (timelineSystemEnabled)
-        {
-            stateMachine["Run"].Add(RunIndexWrapper(Timeline));
-        }
-
-        stateMachine["Run"].AddRange(new List<Action> {
-            RunIndexWrapper(PreRetrievalDelayMsg),
-            RunIndexWrapper(Delay),
-            RunIndexWrapper(Retrieval),
-            RunIndexWrapper(ReturnToBase),
-            DoWaitForReturn,
-            DoRepeatOrContinue,
-            WriteToCanvas("tutorial end 1"),
-            WriteToCanvas("tutorial end 2"),
-            LaunchExperiment
-        });
+        //stateMachine["Run"].AddRange(new List<Action> {
+        //    RunIndexWrapper(PreRetrievalDelayMsg),
+        //    RunIndexWrapper(Delay),
+        //    RunIndexWrapper(Retrieval),
+        //    RunIndexWrapper(ReturnToBase),
+        //    DoWaitForReturn,
+        //    DoRepeatOrContinue,
+        //    WriteToCanvas("tutorial end 1"),
+        //    WriteToCanvas("tutorial end 2"),
+        //    LaunchExperiment
+        //});
 
         // Setup "loop" state machine
         state.loopIndex = 0;
