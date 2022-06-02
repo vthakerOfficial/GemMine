@@ -2399,8 +2399,10 @@ MonoBehaviour:
   spawner: {fileID: 109741775}
   mineBase: {fileID: 1341139549}
   mainCanvas: {fileID: 1201468213}
-  itemFoundEffect: {fileID: 0}
-  itemNotFoundEffect: {fileID: 0}
+  itemFoundEffect: {fileID: 4647848219652399670, guid: a298f727b3f964b279b3c62faac297ac,
+    type: 3}
+  itemNotFoundEffect: {fileID: 7611655739320008343, guid: 2b5bf0650df1a465284389f281ecfb38,
+    type: 3}
   timelineCanvas: {fileID: 1050720769}
   pointGainSFX: {fileID: 8300000, guid: 10b752f2fe16a4eac83061676b260a7a, type: 3}
   pointLossSFX: {fileID: 8300000, guid: 63c6ae6da94f84e358485479f8d799ea, type: 3}

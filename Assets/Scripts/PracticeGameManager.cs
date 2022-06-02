@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using System.Threading;
 
 class PracticeGameManager : GameManager {
 
@@ -74,9 +75,8 @@ class PracticeGameManager : GameManager {
             // Instructions
             WriteToCanvas("welcome " + itemTypeStr),
             WriteToCanvas("instruct pickup " + itemTypeStr),
-            timelineSystemEnabled ?
-                WriteToCanvas("instruct timeline " + itemTypeStr) :
-                Nop(),
+            ConditionalAction(timelineSystemEnabled,
+                WriteToCanvas("instruct timeline " + itemTypeStr)),
             WriteToCanvas("instruct digging " + itemTypeStr),
             WriteToCanvas("instruct delay " + itemTypeStr),
             WriteToCanvas("instruct scoring " + itemTypeStr),
@@ -86,21 +86,17 @@ class PracticeGameManager : GameManager {
 
             RunIndexWrapper(PreEncodingDelayMsg),
             RunIndexWrapper(Delay),
-            pickupSystemEnabled ?
-                WriteToCanvas("pickup " + itemTypeStr) :
-                Nop(),
+            ConditionalAction(pickupSystemEnabled,
+                WriteToCanvas("pickup " + itemTypeStr)),
 
             // Practice trial 1
             RunIndexWrapper(TutorialEncoding1),
             WriteToCanvas("encoding 1 end"),
             RunIndexWrapper(ReturnToBase),
             DoWaitForReturn,
-            timelineSystemEnabled ?
-                WriteToCanvas("timeline " + itemTypeStr) :
-                Nop(),
-            timelineSystemEnabled ?
-                RunIndexWrapper(Timeline) :
-                Nop(),
+            ConditionalActions(timelineSystemEnabled, new List<Action> {
+                WriteToCanvas("timeline " + itemTypeStr),
+                RunIndexWrapper(TutorialTimeline)}),
             RunIndexWrapper(PreRetrievalDelayMsg),
             RunIndexWrapper(Delay),
             WriteToCanvas("digging " + itemTypeStr),
@@ -115,18 +111,15 @@ class PracticeGameManager : GameManager {
             RunIndexWrapper(TutorialEncoding2),
             RunIndexWrapper(ReturnToBase),
             DoWaitForReturn,
-            timelineSystemEnabled ?
-                RunIndexWrapper(Timeline) :
-                Nop(),
+            ConditionalAction(timelineSystemEnabled,
+                RunIndexWrapper(TutorialTimeline)),
             RunIndexWrapper(PreRetrievalDelayMsg),
             RunIndexWrapper(Delay),
             RunIndexWrapper(Retrieval),
             RunIndexWrapper(ReturnToBase),
             DoWaitForReturn,
-        };
 
-        if (timedTrialSystemEnabled) {
-            stateMachine["Run"].AddRange(new List<Action> {
+            ConditionalActions(timedTrialSystemEnabled, new List<Action> {
                 // Practice trial 3
                 WriteToCanvas("trial 2 end"),
                 RunIndexWrapper(PreEncodingDelayMsg),
@@ -136,26 +129,21 @@ class PracticeGameManager : GameManager {
                 RunIndexWrapper(TutorialEncoding3),
                 RunIndexWrapper(ReturnToBase),
                 DoWaitForReturn,
-                timelineSystemEnabled ?
-                    RunIndexWrapper(Timeline) :
-                    Nop(),
+                ConditionalAction(timelineSystemEnabled,
+                    RunIndexWrapper(TutorialTimeline)),
                 RunIndexWrapper(PreRetrievalDelayMsg),
                 RunIndexWrapper(Delay),
                 RunIndexWrapper(Retrieval),
                 RunIndexWrapper(ReturnToBase),
                 DoWaitForReturn,
-            });
-        }
+            }),
 
-        stateMachine["Run"].AddRange(new List<Action>
-        {
             // End tutorial
             DoRepeatOrContinue,
             WriteToCanvas("tutorial end 1"),
             WriteToCanvas("tutorial end 2"),
             LaunchExperiment
-        });
-
+        };
 
         // Setup "loop" state machine
         state.loopIndex = 0;
@@ -396,6 +384,13 @@ class PracticeGameManager : GameManager {
         state.doorIndex = 2;
         state.isTimedTrial = false;
 
+        // Show the dig crosshair
+        if (pickupSystemEnabled)
+        {
+            state.pickupEnabled = true;
+            digCrosshair.SetActive(true);
+        }
+
         // Unfreeze the player
         controlPlayer.Freeze(false);
 
@@ -409,8 +404,17 @@ class PracticeGameManager : GameManager {
         spawnItems.UnhideItems();
 
         // Update canvas displays
-        controlMainCanvas.SetTopDisplay("FIND 1 GOLD", "default", 0.75f);
-        controlMainCanvas.SetTaskDirectionsDisplay("FIND 1 GOLD");
+        string itemTypeStr = Enum.GetName(itemType.GetType(), itemType);
+        if (pickupSystemEnabled)
+        {
+            controlMainCanvas.SetTopDisplay("PICKUP 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("PICKUP 1 " + itemTypeStr.ToUpper() + " LEFT");
+        }
+        else
+        {
+            controlMainCanvas.SetTopDisplay("FIND 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("FIND 1 " + itemTypeStr.ToUpper());
+        }
 
         if (state.isTimedTrial)
         {
@@ -424,11 +428,18 @@ class PracticeGameManager : GameManager {
     public void TutorialEncoding2()
     {
         // Log
-        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "TutorialEncoding2Part1" } });
+        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "TutorialEncoding2" } });
 
         playerActive = true;
         state.doorIndex = 0;
         state.isTimedTrial = false;
+
+        // Show the dig crosshair
+        if (pickupSystemEnabled)
+        {
+            state.pickupEnabled = true;
+            digCrosshair.SetActive(true);
+        }
 
         // Unfreeze the player
         controlPlayer.Freeze(false);
@@ -442,8 +453,17 @@ class PracticeGameManager : GameManager {
         gold2.SetActive(true);
 
         // Update canvas displays
-        controlMainCanvas.SetTopDisplay("FIND 1 GOLD", "default", 0.75f);
-        controlMainCanvas.SetTaskDirectionsDisplay("FIND 1 GOLD");
+        string itemTypeStr = Enum.GetName(itemType.GetType(), itemType);
+        if (pickupSystemEnabled)
+        {
+            controlMainCanvas.SetTopDisplay("PICKUP 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("PICKUP 1 " + itemTypeStr.ToUpper() + " LEFT");
+        }
+        else
+        {
+            controlMainCanvas.SetTopDisplay("FIND 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("FIND 1 " + itemTypeStr.ToUpper());
+        }
 
         if (state.isTimedTrial)
         {
@@ -457,11 +477,18 @@ class PracticeGameManager : GameManager {
     public void TutorialEncoding3()
     {
         // Log
-        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "TutorialEncoding2Part1" } });
+        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "TutorialEncoding3" } });
 
         playerActive = true;
         state.doorIndex = 1;
         state.isTimedTrial = true;
+
+        // Show the dig crosshair
+        if (pickupSystemEnabled)
+        {
+            state.pickupEnabled = true;
+            digCrosshair.SetActive(true);
+        }
 
         // Unfreeze the player
         controlPlayer.Freeze(false);
@@ -475,8 +502,17 @@ class PracticeGameManager : GameManager {
         gold3.SetActive(true);
 
         // Update canvas displays
-        controlMainCanvas.SetTopDisplay("FIND 1 GOLD", "default", 0.75f);
-        controlMainCanvas.SetTaskDirectionsDisplay("FIND 1 GOLD");
+        string itemTypeStr = Enum.GetName(itemType.GetType(), itemType);
+        if (pickupSystemEnabled)
+        {
+            controlMainCanvas.SetTopDisplay("PICKUP 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("PICKUP 1 " + itemTypeStr.ToUpper() + " LEFT");
+        }
+        else
+        {
+            controlMainCanvas.SetTopDisplay("FIND 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("FIND 1 " + itemTypeStr.ToUpper());
+        }
 
         if (state.isTimedTrial)
         {
@@ -485,6 +521,83 @@ class PracticeGameManager : GameManager {
         }
 
         gameEvents.DoIn(new EventBase(Run), taskDuration);
+    }
+
+    // Timeline
+    protected void TutorialTimeline()
+    {
+        // Log
+        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "TutorialTimeline" } });
+
+        // Reset the player
+        FreezeAtBase();
+
+        // Show the timeline
+        timelineCanvas.SetActive(true);
+
+        // Spawn the timeline items
+        foreach (var item in new List<GameObject> { spawnItems.goldObject, spawnItems.gemObjects.ToList().GetRange(0, 7) })
+        {
+            SpawnTimelineItem(item);
+        }
+        MoveItemsToTimeline();
+
+        // Unlock the mouse
+        im.LockCursor(CursorLockMode.None);
+
+        gameEvents.DoIn(new EventBase(
+            () => {
+                TutorialTimelineEnd();
+                Run();
+            }),
+            timelineDuration);
+    }
+
+    protected void TutorialTimelineEnd()
+    {
+        // Report item times
+        var timelineItems = timelineCanvas.transform.Find("Timeline").GetComponent<ControlTimeline>().GetItemTimes(timelineDuration / 1000);
+        im.scriptedInput.ReportScriptedEvent("timeline", new Dictionary<string, object> { { "items", timelineItems } });
+        //Debug.Log(JsonConvert.SerializeObject(new Dictionary<string, object> { { "items", timelineItems } }));
+
+        // Update the score
+        var spawnedItems = new List<GameObject> { spawnItems.goldObject };
+        foreach (var item in new List<GameObject> { spawnItems.goldObject, spawnItems.gemObjects.ToList().GetRange(0,7) })
+        {
+            bool isItemInTimeline = timelineItems.Any(x => (string)x["name"] == item.name);
+            bool isItemSpawned = spawnedItems.Any(x => x.name == item.name);
+
+            if (isItemSpawned && isItemInTimeline)
+            {
+                // Item correctly placed on timeline
+                UpdateScore(correctTimelineReward);
+            }
+            else if (!isItemSpawned && isItemInTimeline)
+            {
+                // Item incorrectly placed on timeline
+                UpdateScore(wrongTimelinePenalty);
+            }
+            else if (isItemSpawned && !isItemInTimeline)
+            {
+                // Item not placed on timeline when it should be
+                UpdateScore(wrongTimelinePenalty);
+            }
+        }
+
+        // Lock the mouse
+        im.LockCursor(CursorLockMode.Locked);
+
+        // Show the new score
+        Thread.Sleep(1);
+
+        // Delete timeline items
+        foreach (var item in GetTimelineItems())
+        {
+            Destroy(item);
+        }
+
+        // Hide the timeline
+        timelineCanvas.SetActive(false);
     }
 
     public void DoRepeatOrContinue() {

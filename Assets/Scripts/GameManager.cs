@@ -162,9 +162,34 @@ public class GameManager : MonoBehaviour
                        todo(); };
     }
 
-    public Action Nop() {
-        return () => { state.runIndex++;
-                       gameEvents.Do(new EventBase(Run)); };
+    public Action ConditionalAction(bool condition, Action todo) {
+        if (condition)
+        {
+            return todo;
+        }
+        else
+        {
+            return () => {
+                state.runIndex++;
+                gameEvents.Do(new EventBase(Run));
+            };
+        }
+    }
+
+    public List<Action> ConditionalActions(bool condition, List<Action> todos)
+    {
+        if (condition)
+        {
+            return todos;
+        }
+        else // NOP
+        {
+            return new List<Action> {
+                () => {
+                    state.runIndex++;
+                    gameEvents.Do(new EventBase(Run));},
+            };
+        }
     }
 
     public void CollectReferences() {
@@ -284,13 +309,16 @@ public class GameManager : MonoBehaviour
         im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "Encoding" } });
 
         playerActive = true;
-        state.pickupEnabled = true;
+
+        // Show the dig crosshair
+        if (pickupSystemEnabled)
+        {
+            state.pickupEnabled = true;
+            digCrosshair.SetActive(true);
+        }
 
         // Unfreeze the player
         controlPlayer.Freeze(false);
-
-        // Show the dig crosshair
-        digCrosshair.SetActive(true);
 
         // Determine if the current trial is timed
         im.scriptedInput.ReportScriptedEvent("timedTrial", new Dictionary<string, object> { { "isTimedTrial", state.isTimedTrial } });
@@ -341,6 +369,8 @@ public class GameManager : MonoBehaviour
         gameEvents.DoIn(new EventBase(Run), taskDuration);
     }
 
+
+    // TODO: JPB: Move these functions around
     public static void SetLayerRecursively(Transform obj, int layer)
     {
         obj.gameObject.layer = layer;
@@ -356,21 +386,34 @@ public class GameManager : MonoBehaviour
         return GameObject.FindGameObjectsWithTag("TimelineItem");
     }
 
-    protected void SpawnTimelineItems()
+    protected void SpawnTimelineItem(GameObject item)
+    {
+        GameObject spawnedItem = Instantiate(item, new Vector3(0, 0, 0), item.transform.rotation) as GameObject;
+        spawnedItem.name = item.name;
+        spawnedItem.transform.SetParent(timelineCanvas.transform, false);
+        spawnedItem.transform.localScale = spawnedItem.transform.localScale * 100;
+        spawnedItem.tag = "TimelineItem";
+        SetLayerRecursively(spawnedItem.transform, LayerMask.NameToLayer("UI"));
+
+        spawnedItem.GetComponent<Collider>().enabled = true;
+        spawnedItem.GetComponent<Collider>().isTrigger = true;
+        var dragDrop = spawnedItem.AddComponent<DragDrop>();
+        dragDrop.camera = GameObject.Find("Overlay Camera").GetComponent<Camera>();
+    }
+
+    protected void SpawnTimelineGold()
+    {
+        for (int i = 0; i < 8; ++i)
+        {
+            SpawnTimelineItem(spawnItems.goldObject);
+        }
+    }
+
+    protected void SpawnTimelineGems()
     {
         foreach (var item in spawnItems.gemObjects)
         {
-            GameObject spawnedItem = Instantiate(item, new Vector3(0, 0, 0), item.transform.rotation) as GameObject;
-            spawnedItem.name = item.name;
-            spawnedItem.transform.SetParent(timelineCanvas.transform, false);
-            spawnedItem.transform.localScale = spawnedItem.transform.localScale * 100;
-            spawnedItem.tag = "TimelineItem";
-            SetLayerRecursively(spawnedItem.transform, LayerMask.NameToLayer("UI"));
-
-            spawnedItem.GetComponent<Collider>().enabled = true;
-            spawnedItem.GetComponent<Collider>().isTrigger = true;
-            var dragDrop = spawnedItem.AddComponent<DragDrop>();
-            dragDrop.camera = GameObject.Find("Overlay Camera").GetComponent<Camera>();
+            SpawnTimelineItem(item);
         }
     }
 
@@ -417,6 +460,45 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // Timeline
+    protected void Timeline()
+    {
+        // Log
+        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "Timeline" } });
+
+        // Reset the player
+        FreezeAtBase();
+
+        // Show the timeline
+        timelineCanvas.SetActive(true);
+
+        // Spawn the timeline items
+        switch (itemType)
+        {
+            case ItemType.gold:
+                SpawnTimelineGems();
+                break;
+            case ItemType.gems:
+                SpawnTimelineGold();
+                break;
+        }
+        MoveItemsToTimeline();
+
+        // Unlock the mouse
+        im.LockCursor(CursorLockMode.None);
+
+        // Display countdown
+        state.timeLeft = taskDuration;
+        state.showCountdown = true;
+
+        gameEvents.DoIn(new EventBase(
+            () => {
+                TimelineEnd();
+                Run();
+            }),
+            timelineDuration);
+    }
+
     protected void TimelineEnd()
     {
         // Report item times
@@ -426,6 +508,8 @@ public class GameManager : MonoBehaviour
 
         // Update the score
         var spawnedItems = spawnItems.GetItems();
+        // TODO: JPB: Change this to handle more than gem objects
+        // TODO: JPB: There would be a bug in the gold version for points
         foreach (var item in spawnItems.gemObjects)
         {
             bool isItemInTimeline = timelineItems.Any(x => (string)x["name"] == item.name);
@@ -448,40 +532,20 @@ public class GameManager : MonoBehaviour
             }
         }
 
+        // Lock the mouse
+        im.LockCursor(CursorLockMode.Locked);
+
+        // Show the new score
+        Thread.Sleep(1);
+
+        // Delete timeline items
+        foreach (var item in GetTimelineItems())
+        {
+            Destroy(item);
+        }
+
         // Hide the timeline
         timelineCanvas.SetActive(false);
-    }
-
-    // Timeline
-    protected void Timeline()
-    {
-        // Log
-        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "Timeline" } });
-
-        // Reset the player
-        FreezeAtBase();
-
-        // Show the timeline
-        timelineCanvas.SetActive(true);
-
-        // Spawn the timeline items
-
-        SpawnTimelineItems();
-        MoveItemsToTimeline();
-
-        // Unlock the mouse
-        im.LockCursor(CursorLockMode.None);
-
-        // Display countdown
-        state.timeLeft = taskDuration;
-        state.showCountdown = true;
-
-        gameEvents.DoIn(new EventBase(
-            () => {
-                TimelineEnd();
-                Run();
-            }),
-            timelineDuration);
     }
 
     // Execute the retrieval interval
@@ -643,7 +707,6 @@ public class GameManager : MonoBehaviour
         }
 
         float minDistance = float.MaxValue;
-        float distance;
 
         // Register a dig
         state.pickupsAttempted++;
@@ -659,13 +722,14 @@ public class GameManager : MonoBehaviour
         var items = spawnItems.GetVisibleItems();
         foreach (var item in items)
         {
-            distance = ControlPlayer.EuclideanDistance(digCrosshair.transform, item.transform);
+            float distance = ControlPlayer.EuclideanDistance(digCrosshair.transform, item.transform);
             if (distance < minDistance)
             {
                 minDistance = distance;
                 minDistanceItem = item;
             }
         }
+        string minDistanceItemName = char.ToLowerInvariant(minDistanceItem.name[0]) + minDistanceItem.name.Substring(1);
 
         // Add or subtract points depending on whether dig was successful
         if (minDistance <= maxDigDistance)
@@ -673,7 +737,8 @@ public class GameManager : MonoBehaviour
             im.scriptedInput.ReportScriptedEvent("pickup", new Dictionary<string, object> {{"successful", true},
                                                                                            {"distanceFromNearestItem", minDistance},
                                                                                            {"nearestItemPositionX", minDistanceItem.transform.position.x},
-                                                                                           {"nearestItemPositionZ", minDistanceItem.transform.position.z}});
+                                                                                           {"nearestItemPositionZ", minDistanceItem.transform.position.z},
+                                                                                           {"nearestItemName", minDistanceItemName}});
             state.itemsFoundLastTrial++;
             string itemTypeStr = Enum.GetName(itemType.GetType(), itemType);
             controlMainCanvas.SetTaskDirectionsDisplay("PICKUP "+ itemTypeStr.ToUpper() + ": " + (items.Length - 1).ToString() + " LEFT");
@@ -688,7 +753,8 @@ public class GameManager : MonoBehaviour
             im.scriptedInput.ReportScriptedEvent("pickup", new Dictionary<string, object> {{"successful", false},
                                                                                            {"distanceFromNearestItem", -1}, // these -1s are for finding instances but should be removed from analysis
                                                                                            {"nearestItemPositionX", -1},
-                                                                                           {"nearestItemPositionZ", -1}});
+                                                                                           {"nearestItemPositionZ", -1},
+                                                                                           {"nearestItemName", -1}});
             if (itemNotFoundEffect)
             {
                 Vector3 spawnPosition = gameObject.transform.position + new Vector3(0f, -1.18f, 0f);
@@ -700,7 +766,8 @@ public class GameManager : MonoBehaviour
             im.scriptedInput.ReportScriptedEvent("pickup", new Dictionary<string, object> {{"successful", false},
                                                                                            {"distanceFromNearestItem", minDistance},
                                                                                            {"nearestItemPositionX", minDistanceItem.transform.position.x},
-                                                                                           {"nearestItemPositionZ", minDistanceItem.transform.position.z}});
+                                                                                           {"nearestItemPositionZ", minDistanceItem.transform.position.z},
+                                                                                           {"nearestItemName", minDistanceItemName}});
             if (itemNotFoundEffect)
             {
                 Vector3 spawnPosition = gameObject.transform.position + new Vector3(0f, -1.18f, 0f);
@@ -727,11 +794,7 @@ public class GameManager : MonoBehaviour
                 break;
         }
 
-
-        const float invalidDistance = -1;
-
-        float minDistance = invalidDistance;
-        float distance;
+        float minDistance = float.MaxValue;
 
         // Register a dig
         state.digsAttempted++;
@@ -746,7 +809,7 @@ public class GameManager : MonoBehaviour
         var items = spawnItems.GetItems();
         foreach (var item in items)
         {
-            distance = ControlPlayer.EuclideanDistance(digCrosshair.transform, item.transform);
+            float distance = ControlPlayer.EuclideanDistance(digCrosshair.transform, item.transform);
             if (distance < minDistance)
             {
                 minDistance = distance;
@@ -756,14 +819,14 @@ public class GameManager : MonoBehaviour
         string minDistanceItemName = char.ToLowerInvariant(minDistanceItem.name[0]) + minDistanceItem.name.Substring(1);
 
         // Add or subtract points depending on whether dig was successful
-        if (minDistance >= 0 && minDistance <= maxDigDistance)
+        if (minDistance <= maxDigDistance)
         {
             UpdateScore(itemFoundReward);
             im.scriptedInput.ReportScriptedEvent("dig", new Dictionary<string, object> {{"successful", true},
                                                                                         {"distanceFromNearestItem", minDistance},
                                                                                         {"nearestItemPositionX", minDistanceItem.transform.position.x},
                                                                                         {"nearestItemPositionZ", minDistanceItem.transform.position.z},
-                                                                                        {"nearestItem", minDistanceItemName}});
+                                                                                        {"nearestItemName", minDistanceItemName}});
             state.itemsFoundLastTrial++;
             string itemTypeStr = Enum.GetName(itemType.GetType(), itemType);
             controlMainCanvas.SetTaskDirectionsDisplay("DIG FOR " + itemTypeStr.ToUpper() + ": " + (items.Length - 1).ToString() + " LEFT");
@@ -773,14 +836,14 @@ public class GameManager : MonoBehaviour
             }
             Destroy(minDistanceItem);
         }
-        else if (minDistance == invalidDistance) // i.e. all items have been dug
+        else if (items.Count() == 0) // i.e. all items have been dug
         {
             UpdateScore(wrongDigPenalty);
             im.scriptedInput.ReportScriptedEvent("dig", new Dictionary<string, object> {{"successful", false},
                                                                                         {"distanceFromNearestItem", -1}, // these -1s are for finding instances but should be removed from analysis
                                                                                         {"nearestItemPositionX", -1},
                                                                                         {"nearestItemPositionZ", -1},
-                                                                                        {"nearestItem", -1}});
+                                                                                        {"nearestItemName", -1}});
             if (itemNotFoundEffect)
             {
                 Vector3 spawnPosition = gameObject.transform.position + new Vector3(0f, -1.18f, 0f);
@@ -794,7 +857,7 @@ public class GameManager : MonoBehaviour
                                                                                         {"distanceFromNearestItem", minDistance},
                                                                                         {"nearestItemPositionX", minDistanceItem.transform.position.x},
                                                                                         {"nearestItemPositionZ", minDistanceItem.transform.position.z},
-                                                                                        {"nearestItem", minDistanceItemName}});
+                                                                                        {"nearestItemName", minDistanceItemName}});
             if (itemNotFoundEffect)
             {
                 Vector3 spawnPosition = gameObject.transform.position + new Vector3(0f, -1.18f, 0f);
@@ -829,6 +892,7 @@ public class GameManager : MonoBehaviour
 
 public static class IListExtensions
 {
+
     /// <summary>
     /// Knuth (Fisher-Yates) Shuffle
     /// Shuffles the element order of the specified list.
@@ -844,5 +908,23 @@ public static class IListExtensions
             list[r] = tmp;
         }
         return list;
+    }
+}
+
+public static class CollectionExtensions
+{
+    /// <summary>
+    /// Allows List constructor to take a items or a list of items that gets expanded
+    /// https://stackoverflow.com/a/63374611
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="collection"></param>
+    /// <param name="itemsToAdd"></param>
+    public static void Add<T>(this ICollection<T> collection, IEnumerable<T> itemsToAdd)
+    {
+        foreach (var item in itemsToAdd)
+        {
+            collection.Add(item);
+        }
     }
 }
