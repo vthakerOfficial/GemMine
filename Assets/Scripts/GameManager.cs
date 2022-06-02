@@ -471,6 +471,9 @@ public class GameManager : MonoBehaviour
 
         // Show the timeline
         timelineCanvas.SetActive(true);
+        // The following two lines are a hack because unity wasn't displaying the camera correctly
+        timelineCanvas.GetComponent<Canvas>().worldCamera.enabled = false;
+        timelineCanvas.GetComponent<Canvas>().worldCamera.enabled = true;
 
         // Spawn the timeline items
         switch (itemType)

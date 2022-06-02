@@ -1701,6 +1701,7 @@ GameObject:
   - component: {fileID: 302174307}
   - component: {fileID: 302174306}
   - component: {fileID: 302174305}
+  - component: {fileID: 302174310}
   m_Layer: 5
   m_Name: TimelineCanvas
   m_TagString: Untagged
@@ -1803,6 +1804,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!114 &302174310
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 302174304}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c311c648204f439189cadd7b649fca2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &310497717
 GameObject:
   m_ObjectHideFlags: 0
@@ -2407,6 +2420,39 @@ Transform:
   m_Father: {fileID: 1341139553}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!21 &459451064
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Default UI Material
+  m_Shader: {fileID: 10770, guid: 0000000000000000f000000000000000, type: 0}
+  m_ShaderKeywords: 
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _ColorMask: 15
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _UseUIAlphaClip: 0
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &469751255
 GameObject:
   m_ObjectHideFlags: 0
@@ -2972,11 +3018,14 @@ MonoBehaviour:
   pointLossSFX: {fileID: 8300000, guid: 63c6ae6da94f84e358485479f8d799ea, type: 3}
   itemsToFind: 1
   delayDuration: 10000
+  timelineDuration: 18000
   taskDuration: 30000
   returnToBasePenalty: -5
   wrongDigPenalty: -2
   goldFoundReward: 10
   gemFoundReward: 10
+  correctTimelineReward: 10
+  wrongTimelinePenalty: -2
   maxDigDistance: 3
   eventsPerFrame: 5
   playerActive: 0
@@ -8354,7 +8403,7 @@ MonoBehaviour:
   m_Script: {fileID: -765806418, guid: f70555f144d8491a825f0804e09c671c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 459451064}
   m_Color: {r: 0.52156866, g: 0.5568628, b: 0.7372549, a: 1}
   m_RaycastTarget: 1
   m_OnCullStateChanged:
