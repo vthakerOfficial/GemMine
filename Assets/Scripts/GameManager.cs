@@ -75,9 +75,10 @@ public class GameManager : MonoBehaviour
         gold,
         gems
     }
-    private ItemType itemType = ItemType.gems;
-    public bool pickupSystemEnabled { get; private set; } = true;
-    public bool timedTrialSystemEnabled { get; private set; } = false;
+    protected ItemType itemType = ItemType.gems;
+    public static bool timelineSystemEnabled { get; private set; } = true;
+    public static bool pickupSystemEnabled { get; private set; } = true;
+    public static bool timedTrialSystemEnabled { get; private set; } = false;
     private System.Random rng = new System.Random();
 
 
@@ -157,8 +158,13 @@ public class GameManager : MonoBehaviour
     }
 
     public virtual Action RunIndexWrapper(Action todo) {
-        return () => {state.runIndex++;
-                      todo(); };
+        return () => { state.runIndex++;
+                       todo(); };
+    }
+
+    public Action Nop() {
+        return () => { state.runIndex++;
+                       gameEvents.Do(new EventBase(Run)); };
     }
 
     public void CollectReferences() {
