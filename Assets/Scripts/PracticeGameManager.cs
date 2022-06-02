@@ -25,8 +25,8 @@ class PracticeGameManager : GameManager {
         {"welcome items", "Welcome to Goldmine!\n\nIn this game, you will be searching and then digging for items over a number of rounds.\n\nPlease ask questions as we go through this tutorial.\n\n(Press space to continue)"},
         {"instruct pickup gold", "Each round begins here in the mine base. First, you will have 30 seconds to search for " + (pickupSystemEnabled ? "and pickup " : "") + "one or more pieces of gold that appear on the ground in the mine ('Search' trials). Try to remember where each gold piece is, as you will need to return there later.\n\nAfter 30 seconds, the gold will disappear, and you will be asked to go back to the base."},
         {"instruct pickup items", "Each round begins here in the mine base. First, you will have 30 seconds to search for " + (pickupSystemEnabled ? "and pickup " : "") + "one or more items that appear on the ground in the mine ('Search' trials). Also, try to remember where each item is, as you will need to return there later.\n\nAfter 30 seconds, the item will disappear, and you will be asked to go back to the base."},
-        {"instruct timeline gold", "Next, you will have another 18 seconds to place the gold that you picked up onto a timeline ('Timeline' trials). Try to place the gold pieces on the timeline at the time you found them."},
-        {"instruct timeline items", "Next, you will have another 18 seconds to place the items that you picked up onto a timeline ('Timeline' trials). Try to place the items on the timeline at the time you found them. You should try to only place the items that you picked up on the timeline."},
+        {"instruct timeline gold", "Next, you will have another 18 seconds to place the gold that you picked up onto a timeline ('Timeline' trials). The timeline represents the 30 seconds of the searching trial. Try to place the gold pieces on the timeline at the time you found them."},
+        {"instruct timeline items", "Next, you will have another 18 seconds to place the items that you picked up onto a timeline ('Timeline' trials). The timeline represents the 30 seconds of the searching trial. Try to place the items on the timeline at the time you found them. You should try to only place the items that you picked up on the timeline."},
         {"instruct digging gold", "Finally, you will have another 30 seconds to go back into the mine and try to dig up the gold that you just found ('Digging' trials). This time the gold will be hidden from view, so you have to dig at the place where you remember it being."},
         {"instruct digging items", "Finally, you will have another 30 seconds to go back into the mine and try to dig up the items that you just found ('Digging' trials). This time the items will be hidden from view, so you have to dig at the place where you remember it being."},
         {"instruct delay gold", "Before each trial, there is a short waiting time in the base, during which you are asked to prepare for the next trial.\n\nIn the waiting time before Digging trials, please try to visualize a path back to the gold that you are intending to dig.\n\nAfter the waiting time, a door will open to your left, right, or center and let you out into the mine. Only one door will open to let you out of the base, but you can re-enter through any door."},
@@ -66,7 +66,7 @@ class PracticeGameManager : GameManager {
 
         FreezeAtBase();
 
-        string itemTypeStr = itemType == ItemType.gold ? "gold" : "items";
+        string itemTypeStr = GetItemTypeStr();
 
         // Setup "Run" state machine
         stateMachine["Run"] = new List<Action> {
@@ -404,11 +404,11 @@ class PracticeGameManager : GameManager {
         spawnItems.UnhideItems();
 
         // Update canvas displays
-        string itemTypeStr = Enum.GetName(itemType.GetType(), itemType);
+        string itemTypeStr = GetItemTypeStr();
         if (pickupSystemEnabled)
         {
-            controlMainCanvas.SetTopDisplay("PICKUP 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
-            controlMainCanvas.SetTaskDirectionsDisplay("PICKUP 1 " + itemTypeStr.ToUpper() + " LEFT");
+            controlMainCanvas.SetTopDisplay("PICK UP 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("PICK UP 1 " + itemTypeStr.ToUpper() + " LEFT");
         }
         else
         {
@@ -453,11 +453,11 @@ class PracticeGameManager : GameManager {
         gold2.SetActive(true);
 
         // Update canvas displays
-        string itemTypeStr = Enum.GetName(itemType.GetType(), itemType);
+        string itemTypeStr = GetItemTypeStr();
         if (pickupSystemEnabled)
         {
-            controlMainCanvas.SetTopDisplay("PICKUP 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
-            controlMainCanvas.SetTaskDirectionsDisplay("PICKUP 1 " + itemTypeStr.ToUpper() + " LEFT");
+            controlMainCanvas.SetTopDisplay("PICK UP 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("PICK UP 1 " + itemTypeStr.ToUpper() + " LEFT");
         }
         else
         {
@@ -502,11 +502,11 @@ class PracticeGameManager : GameManager {
         gold3.SetActive(true);
 
         // Update canvas displays
-        string itemTypeStr = Enum.GetName(itemType.GetType(), itemType);
+        string itemTypeStr = GetItemTypeStr();
         if (pickupSystemEnabled)
         {
-            controlMainCanvas.SetTopDisplay("PICKUP 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
-            controlMainCanvas.SetTaskDirectionsDisplay("PICKUP 1 " + itemTypeStr.ToUpper() + " LEFT");
+            controlMainCanvas.SetTopDisplay("PICK UP 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("PICK UP 1 " + itemTypeStr.ToUpper() + " LEFT");
         }
         else
         {
@@ -544,6 +544,10 @@ class PracticeGameManager : GameManager {
 
         // Unlock the mouse
         im.LockCursor(CursorLockMode.None);
+
+        // Update canvas displays
+        string itemTypeStr = GetItemTypeStr();
+        controlMainCanvas.SetTaskDirectionsDisplay("PLACE " + itemTypeStr.ToUpper() + " ON TIMELINE");
 
         gameEvents.DoIn(new EventBase(
             () => {

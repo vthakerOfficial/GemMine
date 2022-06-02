@@ -11,7 +11,7 @@ using System.Threading;
 public class GameManager : MonoBehaviour
 {
     // Version number
-    const string TASK_VERSION = "Goldmine-2.0.0-Beta0";
+    const string TASK_VERSION = "Goldmine-2.0.0";
 
     // Singleton Boilerplate
     public static GameManager gm;
@@ -31,7 +31,7 @@ public class GameManager : MonoBehaviour
     public AudioClip pointLossSFX; // sound that plays when points are subtracted
 
     // TODO: move to config file?
-    public int itemsToFind = 2; // how many items are placed in the environment
+    public int itemsToFind = 4; // how many items are placed in the environment
     public int delayDuration = 10000; // duration of the delay phases
     public int timelineDuration = 18000; // duration of the timeline phase
     public int taskDuration = 30000; // duration of the task phases (encoding, retrieval)
@@ -76,9 +76,13 @@ public class GameManager : MonoBehaviour
         gems
     }
     protected ItemType itemType = ItemType.gems;
+    public string GetItemTypeStr() { return itemType == ItemType.gold ? "gold" : "items"; }
+    //public string GetItemTypeStr() { return Enum.GetName(itemType.GetType(), itemType); }
+
     public static bool timelineSystemEnabled { get; private set; } = true;
     public static bool pickupSystemEnabled { get; private set; } = true;
     public static bool timedTrialSystemEnabled { get; private set; } = false;
+    public static bool scaleDifficultySystem { get; private set; } = false;
     private System.Random rng = new System.Random();
 
 
@@ -241,7 +245,16 @@ public class GameManager : MonoBehaviour
 
         // Update canvas display
         controlMainCanvas.ShowBackground(2f);
-        controlMainCanvas.SetCentralDisplay2("Get ready to\nsearch for gold", "default", 2f);
+        switch (itemType)
+        {
+            case ItemType.gold:
+                controlMainCanvas.SetCentralDisplay2("Get ready to\nsearch for gold", "default", 2f);
+                break;
+            case ItemType.gems:
+                controlMainCanvas.SetCentralDisplay2("Get ready to\nsearch for items", "default", 2f);
+                break;
+        }
+        
 
         gameEvents.DoIn(new EventBase(Run), 2000);
     }
@@ -254,7 +267,16 @@ public class GameManager : MonoBehaviour
 
         // Update canvas display
         controlMainCanvas.ShowBackground(2f);
-        controlMainCanvas.SetCentralDisplay2("Get ready to\nplace items on timeline", "default", 2f);
+        switch (itemType)
+        {
+            case ItemType.gold:
+                controlMainCanvas.SetCentralDisplay2("Get ready to\nplace gold on timeline", "default", 2f);
+                break;
+            case ItemType.gems:
+                controlMainCanvas.SetCentralDisplay2("Get ready to\nplace items on timeline", "default", 2f);
+                break;
+        }
+        
 
         gameEvents.DoIn(new EventBase(Run), 2000);
     }
@@ -273,7 +295,16 @@ public class GameManager : MonoBehaviour
 
         // Update canvas display
         controlMainCanvas.ShowBackground(2f);
-        controlMainCanvas.SetCentralDisplay2("Visualize a path\nto the gold", "default", 2f);
+        switch (itemType)
+        {
+            case ItemType.gold:
+                controlMainCanvas.SetCentralDisplay2("Visualize a path\nto the gold", "default", 2f);
+                break;
+            case ItemType.gems:
+                controlMainCanvas.SetCentralDisplay2("Visualize a path\nto the items", "default", 2f);
+                break;
+        }
+        
 
         gameEvents.DoIn(new EventBase(Run), 2000);
     }
@@ -340,11 +371,11 @@ public class GameManager : MonoBehaviour
         }
 
         // Update canvas displays
-        string itemTypeStr = Enum.GetName(itemType.GetType(), itemType);
+        string itemTypeStr = GetItemTypeStr();
         if (pickupSystemEnabled)
         {
-            controlMainCanvas.SetTopDisplay("PICKUP" + itemTypeStr.ToUpper(), "default", 0.75f);
-            controlMainCanvas.SetTaskDirectionsDisplay("PICKUP " + itemTypeStr.ToUpper() + ": " + itemsToFind.ToString() + " LEFT");
+            controlMainCanvas.SetTopDisplay("PICK UP" + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("PICK UP " + itemTypeStr.ToUpper() + ": " + itemsToFind.ToString() + " LEFT");
         }
         else
         {
@@ -490,6 +521,10 @@ public class GameManager : MonoBehaviour
         // Unlock the mouse
         im.LockCursor(CursorLockMode.None);
 
+        // Update canvas displays
+        string itemTypeStr = GetItemTypeStr();
+        controlMainCanvas.SetTaskDirectionsDisplay("PLACE " + itemTypeStr.ToUpper() + " ON TIMELINE");
+
         // Display countdown
         state.timeLeft = taskDuration;
         state.showCountdown = true;
@@ -571,7 +606,7 @@ public class GameManager : MonoBehaviour
         controlBase.OpenDoors(iDoors, true, true);
 
         // Update canvas displays
-        string itemTypeStr = Enum.GetName(itemType.GetType(), itemType);
+        string itemTypeStr = GetItemTypeStr();
         controlMainCanvas.SetTopDisplay("DIG FOR " + itemTypeStr.ToUpper(), "default", 0.75f);
         controlMainCanvas.SetTaskDirectionsDisplay("DIG FOR " + itemTypeStr.ToUpper() + ": " + itemsToFind.ToString() + " LEFT");
         
@@ -612,7 +647,7 @@ public class GameManager : MonoBehaviour
         }
         gameEvents.Do(new EventBase(Run));
     }
-    
+
     // Actions that occur at the end of a trial
     protected void EndOfTrial() {
         // Log
@@ -620,14 +655,14 @@ public class GameManager : MonoBehaviour
 
         // Find and destroy gold pieces in the environment
         spawnItems.DestroyItems();
-        
+
         // Update trial tracking info
         state.trialsCompleted++;
-        im.scriptedInput.ReportScriptedEvent("trialComplete", new Dictionary<string, object> {{ "trialsCompleted", state.trialsCompleted }});
+        im.scriptedInput.ReportScriptedEvent("trialComplete", new Dictionary<string, object> { { "trialsCompleted", state.trialsCompleted } });
         trialDisplay.text = "TRIAL " + (state.trialsCompleted + 1).ToString();
         state.itemsFoundTotal += state.itemsFoundLastTrial;
         state.itemsSpawnedTotal += itemsToFind;
-        
+
         // Update performance tracker over the past 2 trials
         pastTrialPerformance[0] = pastTrialPerformance[1];
         if (state.itemsFoundLastTrial == itemsToFind)
@@ -640,13 +675,16 @@ public class GameManager : MonoBehaviour
         }
 
         // Decide how many items will be spawned on the next trial
-        if ((pastTrialPerformance[0]) & (pastTrialPerformance[1]))
+        if (scaleDifficultySystem)
         {
-            itemsToFind++;
-        }
-        else if ((!pastTrialPerformance[0]) & (!pastTrialPerformance[1]) & (itemsToFind > 1))
-        {
-            itemsToFind--;
+            if ((pastTrialPerformance[0]) & (pastTrialPerformance[1]))
+            {
+                itemsToFind++;
+            }
+            else if ((!pastTrialPerformance[0]) & (!pastTrialPerformance[1]) & (itemsToFind > 1))
+            {
+                itemsToFind--;
+            }
         }
         
         gameEvents.Do(new EventBase(Run));
@@ -743,8 +781,7 @@ public class GameManager : MonoBehaviour
                                                                                            {"nearestItemPositionZ", minDistanceItem.transform.position.z},
                                                                                            {"nearestItemName", minDistanceItemName}});
             state.itemsFoundLastTrial++;
-            string itemTypeStr = Enum.GetName(itemType.GetType(), itemType);
-            controlMainCanvas.SetTaskDirectionsDisplay("PICKUP "+ itemTypeStr.ToUpper() + ": " + (items.Length - 1).ToString() + " LEFT");
+            controlMainCanvas.SetTaskDirectionsDisplay("PICK UP " + GetItemTypeStr().ToUpper() + ": " + (items.Length - 1).ToString() + " LEFT");
             //if (itemFoundEffect)
             //{
             //    Instantiate(itemFoundEffect, minDistanceItem.transform.position, Quaternion.identity);
@@ -831,8 +868,7 @@ public class GameManager : MonoBehaviour
                                                                                         {"nearestItemPositionZ", minDistanceItem.transform.position.z},
                                                                                         {"nearestItemName", minDistanceItemName}});
             state.itemsFoundLastTrial++;
-            string itemTypeStr = Enum.GetName(itemType.GetType(), itemType);
-            controlMainCanvas.SetTaskDirectionsDisplay("DIG FOR " + itemTypeStr.ToUpper() + ": " + (items.Length - 1).ToString() + " LEFT");
+            controlMainCanvas.SetTaskDirectionsDisplay("DIG FOR " + GetItemTypeStr().ToUpper() + ": " + (items.Length - 1).ToString() + " LEFT");
             if (itemFoundEffect)
             {
                 Instantiate(itemFoundEffect, minDistanceItem.transform.position, Quaternion.identity);

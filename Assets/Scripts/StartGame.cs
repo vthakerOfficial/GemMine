@@ -40,7 +40,7 @@ public class StartGame : MonoBehaviour
 
     public void LoadParticipant()
     {
-        UnityEngine.UI.Dropdown dropdown = GetComponent<UnityEngine.UI.Dropdown>();
+        Dropdown dropdown = GetComponent<Dropdown>();
         string selectedParticipant = participantCode.text;
 
         participantCode.text = selectedParticipant;

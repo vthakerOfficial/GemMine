@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 64848109100395518}
   - component: {fileID: 4188426454838349357}
   m_Layer: 0
-  m_Name: Saphire_teardrop
+  m_Name: Saphire_teardrop_original
   m_TagString: Pickups
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -61,7 +61,7 @@ MeshRenderer:
   m_RenderingLayerMask: 4294967295
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 89e0e94bb094ee244bced9af4b595520, type: 2}
+  - {fileID: 2100000, guid: bdf18fe40c3c5494aa7d0454415a0b5e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

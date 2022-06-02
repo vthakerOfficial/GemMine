@@ -60,7 +60,7 @@ public class SpawnItems : MonoBehaviour
         while (nCollisions > 0)
         {
             spawnPosition.x = Random.Range(xMinRange, xMaxRange);
-            spawnPosition.y = item.transform.GetComponent<BoxCollider>().size.y / 2;
+            spawnPosition.y = item.transform.GetComponent<BoxCollider>().size.y;
             spawnPosition.z = Random.Range(zMinRange, zMaxRange);
 
             Collider[] hitColliders = Physics.OverlapBox(spawnPosition + new Vector3(0.0f, 0.55f, 0.0f),
@@ -70,6 +70,7 @@ public class SpawnItems : MonoBehaviour
 
         // Spawn the game object
         GameObject spawnedItem = Instantiate(item, spawnPosition, item.transform.rotation) as GameObject;
+        spawnedItem.transform.localScale = spawnedItem.transform.localScale * 2f;
         numItemsSpawned++;
         spawnedItem.name = item.name;
         spawnedItem.GetComponent<WorldDataReporter>().reportingID = itemName + numItemsSpawned.ToString("D4");
