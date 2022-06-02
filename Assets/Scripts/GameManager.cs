@@ -476,10 +476,10 @@ public class GameManager : MonoBehaviour
         switch (itemType)
         {
             case ItemType.gold:
-                SpawnTimelineGems();
+                SpawnTimelineGold();
                 break;
             case ItemType.gems:
-                SpawnTimelineGold();
+                SpawnTimelineGems();
                 break;
         }
         MoveItemsToTimeline();
