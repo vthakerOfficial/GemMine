@@ -457,6 +457,7 @@ public class GameManager : MonoBehaviour
 
         // Update the score
         var spawnedItems = spawnItems.GetItems();
+        // TODO: JPB: (bug) You would still recieve points if you didn't pick up item on timeline
         // TODO: JPB: (bug) Change this to handle more than gem objects
         //                  There would be a bug in the gold version for points
         // TODO: JPB: (feature) Add scoring for how close item is to actual time
