@@ -539,7 +539,8 @@ class PracticeGameManager : GameManager {
         timelineCanvas.GetComponent<Canvas>().worldCamera.enabled = true;
 
         // Spawn the timeline items
-        foreach (var item in new List<GameObject> { spawnItems.goldObject, spawnItems.gemObjects.ToList().GetRange(0, 7) })
+        var otherTimelineItems = spawnItems.gemObjects.Where(x => x.name != "Gold_deposit").ToList().GetRange(0, 7);
+        foreach (var item in new List<GameObject> { spawnItems.goldObject,  otherTimelineItems})
         {
             SpawnTimelineItem(item);
         }

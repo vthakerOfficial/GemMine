@@ -2444,7 +2444,7 @@ MonoBehaviour:
     type: 3}
   itemNotFoundEffect: {fileID: 7611655739320008343, guid: 2b5bf0650df1a465284389f281ecfb38,
     type: 3}
-  timelineCanvas: {fileID: 0}
+  timelineCanvas: {fileID: 2076486959}
   pointGainSFX: {fileID: 8300000, guid: 10b752f2fe16a4eac83061676b260a7a, type: 3}
   pointLossSFX: {fileID: 8300000, guid: 63c6ae6da94f84e358485479f8d799ea, type: 3}
   itemsToFind: 2
