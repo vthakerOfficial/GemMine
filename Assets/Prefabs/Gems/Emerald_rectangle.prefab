@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2395712732986616229}
   m_Layer: 0
   m_Name: Emerald_rectangle
-  m_TagString: Untagged
+  m_TagString: Pickups
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -44,7 +44,7 @@ BoxCollider:
   m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 0.26, y: 0.4, z: 0.15}
+  m_Size: {x: 0.26, y: 0.4, z: 0.17}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &2395712732986616229
 MonoBehaviour:
@@ -75,6 +75,10 @@ PrefabInstance:
     - target: {fileID: 1872209434588800, guid: e014dec58d2d24d54912065f46cc977f, type: 3}
       propertyPath: m_Name
       value: Emerald_rectangle_original
+      objectReference: {fileID: 0}
+    - target: {fileID: 1872209434588800, guid: e014dec58d2d24d54912065f46cc977f, type: 3}
+      propertyPath: m_TagString
+      value: Untagged
       objectReference: {fileID: 0}
     - target: {fileID: 4030055722538554, guid: e014dec58d2d24d54912065f46cc977f, type: 3}
       propertyPath: m_LocalPosition.x
@@ -121,6 +125,11 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6011262038308817385, guid: e014dec58d2d24d54912065f46cc977f,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8219488791897064993, guid: e014dec58d2d24d54912065f46cc977f,
         type: 3}
       propertyPath: m_Enabled
       value: 0

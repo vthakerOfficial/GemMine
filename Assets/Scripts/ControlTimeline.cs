@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using System.Linq;
 
 public class ControlTimeline : MonoBehaviour
 {
@@ -47,8 +48,13 @@ public class ControlTimeline : MonoBehaviour
     public List<Dictionary<string, object>> GetItemTimes(float scale = 1)
     {
         var items = new List<Dictionary<string, object>>();
-        foreach (var item in itemsOnTimeline)
+        foreach (var item in itemsOnTimeline.ToList()) // use ToList to make a copy for safe removing
         {
+            if (item == null) // Remove and skip deleted items
+            {
+                itemsOnTimeline.Remove(item);
+                continue;
+            }
             float itemTime = GetItemTimeNormalized(item.transform) * scale;
             items.Add(new Dictionary<string, object> { { "name", item.name }, { "chosenTime", itemTime }, { "actualTime", 0 } });
         }
@@ -68,6 +74,7 @@ public class ControlTimeline : MonoBehaviour
     {
         if (other.gameObject.GetComponent<DragDrop>() != null)
         {
+            Debug.Log("OnTriggerExit: " + other.gameObject.name); ;
             itemsOnTimeline.Remove(other.gameObject);
         }
     }
