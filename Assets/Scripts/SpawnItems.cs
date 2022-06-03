@@ -46,11 +46,12 @@ public class SpawnItems : MonoBehaviour
         indices.Shuffle(rng);
         for (int i = 0; i < nItems; i++)
         {
-            SpawnItem(gemObjects[indices[i]]);
+            var item = SpawnItem(gemObjects[indices[i]]);
+            item.AddComponent<PickupItem>();
         }
     }
 
-    public void SpawnItem(GameObject item)
+    public GameObject SpawnItem(GameObject item)
     {
         Vector3 spawnPosition = new Vector3();
         string itemName = char.ToLowerInvariant(item.name[0]) + item.name.Substring(1);
@@ -82,6 +83,8 @@ public class SpawnItems : MonoBehaviour
 
         // Make the parent the spawner so hierarchy doesn't get super messy
         spawnedItem.transform.parent = gameObject.transform;
+
+        return spawnedItem;
     }
 
     public void HideItem(GameObject item)
