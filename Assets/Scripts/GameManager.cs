@@ -372,6 +372,15 @@ public class GameManager : MonoBehaviour
                 break;
         }
 
+        // Initialize the spawned items for pickup
+        if (pickupSystemEnabled)
+        {
+            foreach (var item in spawnItems.GetItems())
+            {
+                item.GetComponent<PickupItem>().InitPickup();
+            }
+        }
+
         // Update canvas displays
         string itemTypeStr = GetItemTypeStr();
         if (pickupSystemEnabled)
@@ -457,29 +466,33 @@ public class GameManager : MonoBehaviour
 
         // Update the score
         var spawnedItems = spawnItems.GetItems();
-        // TODO: JPB: (bug) You would still recieve points if you didn't pick up item on timeline
         // TODO: JPB: (bug) Change this to handle more than gem objects
         //                  There would be a bug in the gold version for points
         // TODO: JPB: (feature) Add scoring for how close item is to actual time
         //                      +5 on timeline, +1 to +5 for closeness, -2 not on timeline, -2 incorrect on timeline
         // Note: make sure changes here happen in TutorialTimelineEnd too
+        foreach (var item in spawnedItems)
+        {
+            Debug.Log(item.name + " " + item.GetComponent<PickupItem>().isPickedUp);
+        }
+
         int scoreDelta = 0;
         foreach (var item in spawnItems.gemObjects)
         {
             bool isItemInTimeline = timelineItems.Any(x => (string)x["name"] == item.name);
-            bool isItemSpawned = spawnedItems.Any(x => x.name == item.name);
+            bool isItemSpawnedAndPickedUp = spawnedItems.Any(x => (x.name == item.name) && x.GetComponent<PickupItem>().isPickedUp);
 
-            if (isItemSpawned && isItemInTimeline)
+            if (isItemSpawnedAndPickedUp && isItemInTimeline)
             {
                 // Item correctly placed on timeline
                 scoreDelta += correctTimelineReward;
             }
-            else if (!isItemSpawned && isItemInTimeline)
+            else if (!isItemSpawnedAndPickedUp && isItemInTimeline)
             {
                 // Item incorrectly placed on timeline
                 scoreDelta += wrongTimelinePenalty;
             }
-            else if (isItemSpawned && !isItemInTimeline)
+            else if (isItemSpawnedAndPickedUp && !isItemInTimeline)
             {
                 // Item not placed on timeline when it should be
                 scoreDelta += wrongTimelinePenalty;
@@ -701,10 +714,9 @@ public class GameManager : MonoBehaviour
                                                                                            {"nearestItemName", minDistanceItemName}});
             state.itemsFoundLastTrial++;
             controlMainCanvas.SetTaskDirectionsDisplay("PICK UP " + GetItemTypeStr().ToUpper() + ": " + (items.Length - 1).ToString() + " LEFT");
-            //if (itemFoundEffect)
-            //{
-            //    Instantiate(itemFoundEffect, minDistanceItem.transform.position, Quaternion.identity);
-            //}
+
+            // TODO: JPB: (refactor) Combine spawnItems and Pickup systems?
+            minDistanceItem.GetComponent<PickupItem>().Pickup();
             spawnItems.HideItem(minDistanceItem);
         }
         else if (items.Count() == 0) // i.e. all items have been dug
@@ -768,6 +780,12 @@ public class GameManager : MonoBehaviour
         var items = spawnItems.GetItems();
         foreach (var item in items)
         {
+            // Don't allow digging of items that weren't picked up
+            if (pickupSystemEnabled && !item.GetComponent<PickupItem>().isPickedUp)
+            {
+                continue;
+            }
+
             float distance = ControlPlayer.EuclideanDistance(digCrosshair.transform, item.transform);
             if (distance < minDistance)
             {

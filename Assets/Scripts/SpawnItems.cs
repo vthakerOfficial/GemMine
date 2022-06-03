@@ -117,6 +117,10 @@ public class SpawnItems : MonoBehaviour
         }
     }
 
+    public bool isItemHidden(GameObject item) {
+        return !item.GetComponentInChildren<Renderer>().enabled;
+    }
+
     public void DestroyItems()
     {
         items = GameObject.FindGameObjectsWithTag("Pickups");
