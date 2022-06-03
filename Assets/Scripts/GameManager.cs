@@ -461,7 +461,6 @@ public class GameManager : MonoBehaviour
         //                  There would be a bug in the gold version for points
         // TODO: JPB: (feature) Add scoring for how close item is to actual time
         //                      +5 on timeline, +1 to +5 for closeness, -2 not on timeline, -2 incorrect on timeline
-        // TODO: JPB: (feature) Make score puff up after timeline
         // Note: make sure changes here happen in TutorialTimelineEnd too
         int scoreDelta = 0;
         foreach (var item in spawnItems.gemObjects)
@@ -672,7 +671,7 @@ public class GameManager : MonoBehaviour
         state.pickupsAttempted++;
 
         // Play the dig sound
-        // TODO: JPB: Change pickupAudio Source in unity GameManager
+        // TODO: JPB: (feature) Change pickupAudio Source in unity GameManager
         if (pickupAudioSource)
         {
             pickupAudioSource.Play();
