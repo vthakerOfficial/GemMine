@@ -36,8 +36,9 @@ class ExperimentGameManager : GameManager {
             RunIndexWrapper(ReturnToBase),
             DoWaitForReturn,
             RunIndexWrapper(PreTimelineMsg),
-            ConditionalAction(timelineSystemEnabled,
-                RunIndexWrapper(Timeline)),
+            ConditionalActions(timelineSystemEnabled, new List<Action> {
+                RunIndexWrapper(Timeline),
+                RunIndexWrapper(TimelineEnd)}),
             RunIndexWrapper(PreRetrievalDelayMsg),
             RunIndexWrapper(Delay),
             RunIndexWrapper(Retrieval),

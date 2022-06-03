@@ -7,7 +7,11 @@ public class PickupItem : MonoBehaviour
     void Update()
     {
         const float RPM = 10;
-        float yRot = RPM * 6f * Time.deltaTime;
-        transform.Rotate(0, yRot, 0, Space.World);
+
+        if (transform.name != "gold")
+        {
+            float yRot = RPM * 6f * Time.deltaTime;
+            transform.Rotate(0, yRot, 0, Space.World);
+        }
     }
 }

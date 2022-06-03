@@ -34,8 +34,9 @@ public class GameManager : MonoBehaviour
     public int itemsToFind = 4; // how many items are placed in the environment
     public int delayDuration = 10000; // duration of the delay phases
     public int timelineDuration = 18000; // duration of the timeline phase
+    public int timelineScoreDuration = 2000; // duration of the timeline score display
     public int taskDuration = 30000; // duration of the task phases (encoding, retrieval)
-    public int returnToBasePenalty = -5; // penalty for not returning to the base in time
+    public int returnToBasePenalty = -5; // penalty for not eturning to the base in time
     public int wrongDigPenalty = -2; // penalty for digging in the wrong place
     public int goldFoundReward = 10; // points for each gold piece found
     public int gemFoundReward = 10; // points for each gem found
@@ -53,6 +54,7 @@ public class GameManager : MonoBehaviour
     protected SpawnItems spawnItems;
     protected ControlBase controlBase;
     protected ControlCanvas controlMainCanvas;
+    protected ControlTimeline controlTimeline;
 
     private GameObject minDistanceItem;
     private AudioSource pickupAudioSource;
@@ -83,7 +85,6 @@ public class GameManager : MonoBehaviour
     public static bool pickupSystemEnabled { get; private set; } = true;
     public static bool timedTrialSystemEnabled { get; private set; } = false;
     public static bool scaleDifficultySystem { get; private set; } = false;
-    private System.Random rng = new System.Random();
 
 
     protected void Awake()
@@ -218,6 +219,7 @@ public class GameManager : MonoBehaviour
         pickupAudioSource = gameObject.GetComponents<AudioSource>()[0];
         digAudioSource = gameObject.GetComponents<AudioSource>()[1];
         //baseReporter = mineBase.GetComponent<WorldDataReporter>();
+        controlTimeline = timelineCanvas.transform.Find("Timeline").GetComponent<ControlTimeline>();
     }
 
     // Actions that occur at the beginning of a trial
@@ -400,97 +402,6 @@ public class GameManager : MonoBehaviour
         gameEvents.DoIn(new EventBase(Run), taskDuration);
     }
 
-
-    // TODO: JPB: Move these functions around
-    public static void SetLayerRecursively(Transform obj, int layer)
-    {
-        obj.gameObject.layer = layer;
-
-        foreach (Transform child in obj)
-        {
-            SetLayerRecursively(child, layer);
-        }
-    }
-
-    protected GameObject[] GetTimelineItems()
-    {
-        return GameObject.FindGameObjectsWithTag("TimelineItem");
-    }
-
-    protected void SpawnTimelineItem(GameObject item)
-    {
-        GameObject spawnedItem = Instantiate(item, new Vector3(0, 0, 0), item.transform.rotation) as GameObject;
-        spawnedItem.name = item.name;
-        spawnedItem.transform.SetParent(timelineCanvas.transform, false);
-        spawnedItem.transform.localScale = spawnedItem.transform.localScale * 100;
-        spawnedItem.tag = "TimelineItem";
-        SetLayerRecursively(spawnedItem.transform, LayerMask.NameToLayer("UI"));
-
-        spawnedItem.GetComponent<Collider>().enabled = true;
-        spawnedItem.GetComponent<Collider>().isTrigger = true;
-        var dragDrop = spawnedItem.AddComponent<DragDrop>();
-        dragDrop.camera = GameObject.Find("Overlay Camera").GetComponent<Camera>();
-    }
-
-    protected void SpawnTimelineGold()
-    {
-        for (int i = 0; i < 8; ++i)
-        {
-            SpawnTimelineItem(spawnItems.goldObject);
-        }
-    }
-
-    protected void SpawnTimelineGems()
-    {
-        foreach (var item in spawnItems.gemObjects)
-        {
-            SpawnTimelineItem(item);
-        }
-    }
-
-    protected void MoveItemsToTimeline()
-    {
-        // Get items
-        var items = GetTimelineItems();
-
-        // Get space to put the items on timeline
-        Vector3[] itemAreaCorners = new Vector3[4];
-        timelineCanvas.transform.Find("ItemArea").GetComponent<RectTransform>().GetWorldCorners(itemAreaCorners);
-        float xMin = itemAreaCorners[1].x; // x-coord of top left corner
-        float xMax = itemAreaCorners[2].x; // x-coord of top right corner
-        float yMin = itemAreaCorners[0].y; // y-coord of bottom left corner
-        float yMax = itemAreaCorners[1].y; // y-coord of top left corner
-        float width = xMax - xMin;
-        float height = yMax - yMin;
-
-        // Control the rows and columns shown
-        const int rows = 2;
-        int cols = Mathf.CeilToInt(items.Length / 2f);
-        int extra = items.Length % 2;
-
-        // Scale values for item placement
-        float xScale = width / (cols - 1);
-        float yScale = height / (rows - 1);
-
-        // Generate the positions
-        var positions = new List<Vector3>();
-        foreach (int i in Enumerable.Range(0, cols))
-        {
-            foreach (int j in Enumerable.Range(0, rows))
-            {
-                Vector3 offset = new Vector3(i * xScale, j * yScale, 0);
-                positions.Add(itemAreaCorners[0] + offset);
-            }
-        }
-
-        // Randomize positions and move the items
-        positions.Shuffle(rng);
-        foreach (int i in Enumerable.Range(0, items.Count()))
-        {
-            items[i].transform.position = positions[i];
-        }
-    }
-
     // Timeline
     protected void Timeline()
     {
@@ -510,13 +421,12 @@ public class GameManager : MonoBehaviour
         switch (itemType)
         {
             case ItemType.gold:
-                SpawnTimelineGold();
+                controlTimeline.SpawnTimelineItems(spawnItems.goldObject, 8);
                 break;
             case ItemType.gems:
-                SpawnTimelineGems();
+                controlTimeline.SpawnTimelineItems(spawnItems.gemObjects);
                 break;
         }
-        MoveItemsToTimeline();
 
         // Unlock the mouse
         im.LockCursor(CursorLockMode.None);
@@ -529,25 +439,31 @@ public class GameManager : MonoBehaviour
         state.timeLeft = taskDuration;
         state.showCountdown = true;
 
-        gameEvents.DoIn(new EventBase(
-            () => {
-                TimelineEnd();
-                Run();
-            }),
-            timelineDuration);
+        //gameEvents.DoIn(new EventBase(
+        //    () => {
+        //        TimelineEnd();
+        //        Run();
+        //    }),
+        //    timelineDuration);
+        gameEvents.DoIn(new EventBase(Run), timelineDuration);
     }
 
     protected void TimelineEnd()
     {
         // Report item times
-        var timelineItems = timelineCanvas.transform.Find("Timeline").GetComponent<ControlTimeline>().GetItemTimes(timelineDuration / 1000);
+        var timelineItems = controlTimeline.GetItemTimes(timelineDuration / 1000);
         im.scriptedInput.ReportScriptedEvent("timeline", new Dictionary<string, object> { { "items", timelineItems } });
         //Debug.Log(JsonConvert.SerializeObject(new Dictionary<string, object> { { "items", timelineItems } }));
 
         // Update the score
         var spawnedItems = spawnItems.GetItems();
-        // TODO: JPB: Change this to handle more than gem objects
-        // TODO: JPB: There would be a bug in the gold version for points
+        // TODO: JPB: (bug) Change this to handle more than gem objects
+        //                  There would be a bug in the gold version for points
+        // TODO: JPB: (feature) Add scoring for how close item is to actual time
+        //                      +5 on timeline, +1 to +5 for closeness, -2 not on timeline, -2 incorrect on timeline
+        // TODO: JPB: (feature) Make score puff up after timeline
+        // Note: make sure changes here happen in TutorialTimelineEnd too
+        int scoreDelta = 0;
         foreach (var item in spawnItems.gemObjects)
         {
             bool isItemInTimeline = timelineItems.Any(x => (string)x["name"] == item.name);
@@ -556,34 +472,37 @@ public class GameManager : MonoBehaviour
             if (isItemSpawned && isItemInTimeline)
             {
                 // Item correctly placed on timeline
-                UpdateScore(correctTimelineReward);
+                scoreDelta += correctTimelineReward;
             }
             else if (!isItemSpawned && isItemInTimeline)
             {
                 // Item incorrectly placed on timeline
-                UpdateScore(wrongTimelinePenalty);
+                scoreDelta += wrongTimelinePenalty;
             }
             else if (isItemSpawned && !isItemInTimeline)
             {
                 // Item not placed on timeline when it should be
-                UpdateScore(wrongTimelinePenalty);
+                scoreDelta += wrongTimelinePenalty;
             }
         }
+        UpdateScore(scoreDelta);
 
         // Lock the mouse
         im.LockCursor(CursorLockMode.Locked);
 
-        // Show the new score
-        Thread.Sleep(1);
+        gameEvents.DoIn(new EventBase(
+            () => {
+                // Delete timeline items
+                foreach (var item in controlTimeline.GetTimelineItems())
+                {
+                    Destroy(item);
+                }
 
-        // Delete timeline items
-        foreach (var item in GetTimelineItems())
-        {
-            Destroy(item);
-        }
-
-        // Hide the timeline
-        timelineCanvas.SetActive(false);
+                // Hide the timeline 
+                timelineCanvas.SetActive(false);
+                Run();
+            }),
+            timelineScoreDuration);
     }
 
     // Execute the retrieval interval

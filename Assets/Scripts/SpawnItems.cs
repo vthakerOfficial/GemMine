@@ -46,8 +46,7 @@ public class SpawnItems : MonoBehaviour
         indices.Shuffle(rng);
         for (int i = 0; i < nItems; i++)
         {
-            var item = SpawnItem(gemObjects[indices[i]]);
-            item.AddComponent<PickupItem>();
+            SpawnItem(gemObjects[indices[i]]);
         }
     }
 
@@ -70,19 +69,22 @@ public class SpawnItems : MonoBehaviour
         }
 
         // Spawn the game object
-        GameObject spawnedItem = Instantiate(item, spawnPosition, item.transform.rotation) as GameObject;
-        spawnedItem.transform.localScale = spawnedItem.transform.localScale * 2f;
-        numItemsSpawned++;
+        GameObject spawnedItem = Instantiate(item, spawnPosition, item.transform.rotation);
         spawnedItem.name = item.name;
+        spawnedItem.transform.localScale = spawnedItem.transform.localScale * 2f;
         spawnedItem.GetComponent<WorldDataReporter>().reportingID = itemName + numItemsSpawned.ToString("D4");
+        spawnedItem.AddComponent<PickupItem>();
+
+        // Make the parent the spawner so hierarchy doesn't get super messy
+        spawnedItem.transform.parent = gameObject.transform;
+
+        // Misc
+        numItemsSpawned++;
         im.scriptedInput.ReportScriptedEvent(itemName + "Location", new Dictionary<string, object> {
                 {"reportingId", spawnedItem.GetComponent<WorldDataReporter>().reportingID},
                 { "positionX", spawnPosition.x },
                 { "positionZ", spawnPosition.z }
             });
-
-        // Make the parent the spawner so hierarchy doesn't get super messy
-        spawnedItem.transform.parent = gameObject.transform;
 
         return spawnedItem;
     }

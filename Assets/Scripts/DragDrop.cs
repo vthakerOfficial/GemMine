@@ -44,7 +44,7 @@ public class DragDrop : MonoBehaviour
     {
         if (collidedItem != null)
         {
-            collidedItem.GetComponent<ControlTimeline>().SetItemPosition(transform);
+            collidedItem.GetComponent<ControlTimeline>().SetItemPositionOnTimeline(transform);
         }
         else
         {
