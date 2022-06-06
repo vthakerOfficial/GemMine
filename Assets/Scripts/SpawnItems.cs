@@ -46,33 +46,42 @@ public class SpawnItems : MonoBehaviour
         indices.Shuffle(rng);
         for (int i = 0; i < nItems; i++)
         {
-            SpawnItem(gemObjects[indices[i]]);
+            SpawnItem(gemObjects[indices[i]], 2);
         }
     }
 
-    public GameObject SpawnItem(GameObject item)
+    public GameObject SpawnItem(GameObject item, float scaleSize = 1, Vector3? position = null, Quaternion? rotation = null)
     {
         Vector3 spawnPosition = new Vector3();
-        string itemName = char.ToLowerInvariant(item.name[0]) + item.name.Substring(1);
+        GameObject spawnedItem;
 
-        // Randomly generate a spawn position that doesn't collide with other objects
-        int nCollisions = 1;
-        while (nCollisions > 0)
+        if (position.HasValue)
         {
-            spawnPosition.x = Random.Range(xMinRange, xMaxRange);
-            spawnPosition.y = item.transform.GetComponent<BoxCollider>().size.y;
-            spawnPosition.z = Random.Range(zMinRange, zMaxRange);
-
-            Collider[] hitColliders = Physics.OverlapBox(spawnPosition + new Vector3(0.0f, 0.55f, 0.0f),
-                                                         new Vector3(0.5f, 0.5f, 0.5f));
-            nCollisions = hitColliders.Length;
+            spawnedItem = Instantiate(item, position.Value, rotation ?? item.transform.rotation);
         }
+        else
+        {
+            // Randomly generate a spawn position that doesn't collide with other objects
+            int nCollisions = 1;
+            while (nCollisions > 0)
+            {
+                spawnPosition.x = Random.Range(xMinRange, xMaxRange);
+                spawnPosition.y = item.transform.GetComponent<BoxCollider>().size.y;
+                spawnPosition.z = Random.Range(zMinRange, zMaxRange);
+
+                Collider[] hitColliders = Physics.OverlapBox(spawnPosition + new Vector3(0.0f, 0.55f, 0.0f),
+                                                             new Vector3(0.5f, 0.5f, 0.5f));
+                nCollisions = hitColliders.Length;
+            }
+            spawnedItem = Instantiate(item, spawnPosition, rotation ?? item.transform.rotation);
+        }
+        
 
         // Spawn the game object
-        GameObject spawnedItem = Instantiate(item, spawnPosition, item.transform.rotation);
+        //GameObject spawnedItem = Instantiate(item, spawnPosition, item.transform.rotation);
         spawnedItem.name = item.name;
-        spawnedItem.transform.localScale = spawnedItem.transform.localScale * 2f;
-        spawnedItem.GetComponent<WorldDataReporter>().reportingID = itemName + numItemsSpawned.ToString("D4");
+        spawnedItem.transform.localScale = spawnedItem.transform.localScale * scaleSize;
+        spawnedItem.GetComponent<WorldDataReporter>().reportingID = item.name + numItemsSpawned.ToString("D4");
         spawnedItem.AddComponent<PickupItem>();
 
         // Make the parent the spawner so hierarchy doesn't get super messy
@@ -80,7 +89,7 @@ public class SpawnItems : MonoBehaviour
 
         // Misc
         numItemsSpawned++;
-        im.scriptedInput.ReportScriptedEvent(itemName + "Location", new Dictionary<string, object> {
+        im.scriptedInput.ReportScriptedEvent(item.name + "Location", new Dictionary<string, object> {
                 {"reportingId", spawnedItem.GetComponent<WorldDataReporter>().reportingID},
                 { "positionX", spawnPosition.x },
                 { "positionZ", spawnPosition.z }

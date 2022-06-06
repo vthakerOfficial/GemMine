@@ -355,16 +355,20 @@ class PracticeGameManager : GameManager {
             Destroy(items[iGold]);
         }
 
-        // Create the new gold objects
-        gold1 = Instantiate(spawnItems.goldObject, gold1Location.transform.position, gold1Location.transform.rotation) as GameObject;
-        gold2 = Instantiate(spawnItems.goldObject, gold2Location.transform.position, gold2Location.transform.rotation) as GameObject;
-        gold3 = Instantiate(spawnItems.goldObject, gold3Location.transform.position, gold3Location.transform.rotation) as GameObject;
-        gold1.name = "gold";
-        gold2.name = "gold";
-        gold3.name = "gold";
-        gold1.SetActive(false);
-        gold2.SetActive(false);
-        gold3.SetActive(false);
+        //// Create the new gold objects
+        //gold1 = spawnItems.SpawnItem(spawnItems.goldObject, 1, gold1.transform.position, gold1.transform.rotation);
+        //gold1.transform.position = gold1Location.transform.position;
+        //gold1.transform.rotation = gold1Location.transform.rotation;
+        //gold1.SetActive(false);
+        //gold2 = spawnItems.SpawnItem(spawnItems.goldObject);
+        //gold2.transform.position = gold2Location.transform.position;
+        //gold2.transform.rotation = gold2Location.transform.rotation;
+        //gold2.SetActive(false);
+        //gold3 = spawnItems.SpawnItem(spawnItems.goldObject);
+        //gold3.transform.position = gold3Location.transform.position;
+        //gold3.transform.rotation = gold3Location.transform.rotation;
+        //gold3.SetActive(false);
+
         itemsToFind = 1;
         gameEvents.Do(new EventBase(Run));
     }
@@ -402,8 +406,9 @@ class PracticeGameManager : GameManager {
         controlBase.OpenDoors(iDoors, true, true);
 
         // Reveal gold in the environment
-        gold1.SetActive(true);
-        spawnItems.UnhideItems();
+        gold1 = spawnItems.SpawnItem(spawnItems.goldObject, 1, gold1Location.transform.position, gold1Location.transform.rotation);
+        //gold1.SetActive(true);
+        //spawnItems.UnhideItems();
 
         // Update canvas displays
         string itemTypeStr = GetItemTypeStr();
@@ -452,7 +457,8 @@ class PracticeGameManager : GameManager {
         controlBase.OpenDoors(iDoors, true, true);
 
         // Reveal gold in the environment
-        gold2.SetActive(true);
+        gold2 = spawnItems.SpawnItem(spawnItems.goldObject, 1, gold2Location.transform.position, gold2Location.transform.rotation);
+        //gold2.SetActive(true);
 
         // Update canvas displays
         string itemTypeStr = GetItemTypeStr();
@@ -501,7 +507,8 @@ class PracticeGameManager : GameManager {
         controlBase.OpenDoors(iDoors, true, true);
 
         // Reveal gold in the environment
-        gold3.SetActive(true);
+        gold3 = spawnItems.SpawnItem(spawnItems.goldObject, 1, gold3Location.transform.position, gold3Location.transform.rotation);
+        //gold3.SetActive(true);
 
         // Update canvas displays
         string itemTypeStr = GetItemTypeStr();
@@ -541,7 +548,7 @@ class PracticeGameManager : GameManager {
         timelineCanvas.GetComponent<Canvas>().worldCamera.enabled = true;
 
         // Spawn the timeline items
-        var otherTimelineItems = spawnItems.gemObjects.Where(x => x.name != "Gold_deposit").ToList().GetRange(0, 7);
+        var otherTimelineItems = spawnItems.gemObjects.Where(x => x.name != "goldDeposit").ToList().GetRange(0, 7);
         var timelineItems = new List<GameObject> { spawnItems.goldObject, otherTimelineItems };
         controlTimeline.SpawnTimelineItems(timelineItems.ToArray());
 
@@ -564,23 +571,29 @@ class PracticeGameManager : GameManager {
 
         // Update the score
         int scoreDelta = 0;
-        var spawnedItems = new List<GameObject> { spawnItems.goldObject };
-        foreach (var item in new List<GameObject> { spawnItems.goldObject, spawnItems.gemObjects.ToList().GetRange(0,7) })
+        var fakeSpawnedItems = spawnItems.GetItems().ToList();
+        var otherTimelineItems = spawnItems.gemObjects.Where(x => x.name != "goldDeposit").ToList().GetRange(0, 7);
+        fakeSpawnedItems.Add(otherTimelineItems);
+        foreach (var item in new List<GameObject> { spawnItems.goldObject, otherTimelineItems })
         {
             bool isItemInTimeline = timelineItems.Any(x => (string)x["name"] == item.name);
-            bool isItemSpawned = spawnedItems.Any(x => x.name == item.name);
+            bool isItemSpawnedAndPickedUp = fakeSpawnedItems.Any(
+                x => (x.name == item.name) &&
+                     (x.GetComponent<PickupItem>() == null ? false : x.GetComponent<PickupItem>().isPickedUp)
+            );
+            Debug.Log(item.name + " " + isItemInTimeline + " " + isItemSpawnedAndPickedUp);
 
-            if (isItemSpawned && isItemInTimeline)
+            if (isItemSpawnedAndPickedUp && isItemInTimeline)
             {
                 // Item correctly placed on timeline
                 scoreDelta += correctTimelineReward;
             }
-            else if (!isItemSpawned && isItemInTimeline)
+            else if (!isItemSpawnedAndPickedUp && isItemInTimeline)
             {
                 // Item incorrectly placed on timeline
                 scoreDelta += wrongTimelinePenalty;
             }
-            else if (isItemSpawned && !isItemInTimeline)
+            else if (isItemSpawnedAndPickedUp && !isItemInTimeline)
             {
                 // Item not placed on timeline when it should be
                 scoreDelta += wrongTimelinePenalty;

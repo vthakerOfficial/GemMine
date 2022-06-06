@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 496712517325928430}
   - component: {fileID: 3306413937841440183}
   m_Layer: 0
-  m_Name: Saphire_teardrop
+  m_Name: saphireTeardrop
   m_TagString: Pickups
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -74,7 +74,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1097255134576154, guid: f016043183e6a437d947a5e6730db938, type: 3}
       propertyPath: m_Name
-      value: Saphire_teardrop_original
+      value: saphireTeardropOriginal
       objectReference: {fileID: 0}
     - target: {fileID: 1097255134576154, guid: f016043183e6a437d947a5e6730db938, type: 3}
       propertyPath: m_IsActive

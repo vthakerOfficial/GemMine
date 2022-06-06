@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4318736425663821540}
   - component: {fileID: 2395712732986616229}
   m_Layer: 0
-  m_Name: Emerald_rectangle
+  m_Name: emeraldRectangle
   m_TagString: Pickups
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -74,7 +74,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1872209434588800, guid: e014dec58d2d24d54912065f46cc977f, type: 3}
       propertyPath: m_Name
-      value: Emerald_rectangle_original
+      value: emeraldRectangleOriginal
       objectReference: {fileID: 0}
     - target: {fileID: 1872209434588800, guid: e014dec58d2d24d54912065f46cc977f, type: 3}
       propertyPath: m_TagString

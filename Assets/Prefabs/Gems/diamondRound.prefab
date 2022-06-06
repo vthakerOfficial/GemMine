@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: -7037932770747173913}
   - component: {fileID: -4747209620531810703}
   m_Layer: 0
-  m_Name: Diamond_12tRound
+  m_Name: diamondRound
   m_TagString: Pickups
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -74,7 +74,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 100000, guid: 121f6f43dfef44e1ba19936ebd7d5a83, type: 3}
       propertyPath: m_Name
-      value: Diamond_12tRound_original
+      value: diamondRoundOriginal
       objectReference: {fileID: 0}
     - target: {fileID: 100000, guid: 121f6f43dfef44e1ba19936ebd7d5a83, type: 3}
       propertyPath: m_TagString

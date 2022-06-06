@@ -459,28 +459,27 @@ public class GameManager : MonoBehaviour
 
     protected void TimelineEnd()
     {
+        var spawnedItems = spawnItems.GetItems();
+
         // Report item times
         var timelineItems = controlTimeline.GetItemTimes(timelineDuration / 1000);
-        im.scriptedInput.ReportScriptedEvent("timeline", new Dictionary<string, object> { { "items", timelineItems } });
+        im.scriptedInput.ReportScriptedEvent("timeline",
+            new Dictionary<string, object> { { "chosenTimelineItems", timelineItems } });
         //Debug.Log(JsonConvert.SerializeObject(new Dictionary<string, object> { { "items", timelineItems } }));
 
         // Update the score
-        var spawnedItems = spawnItems.GetItems();
+        
         // TODO: JPB: (bug) Change this to handle more than gem objects
         //                  There would be a bug in the gold version for points
         // TODO: JPB: (feature) Add scoring for how close item is to actual time
         //                      +5 on timeline, +1 to +5 for closeness, -2 not on timeline, -2 incorrect on timeline
         // Note: make sure changes here happen in TutorialTimelineEnd too
-        foreach (var item in spawnedItems)
-        {
-            Debug.Log(item.name + " " + item.GetComponent<PickupItem>().isPickedUp);
-        }
-
         int scoreDelta = 0;
         foreach (var item in spawnItems.gemObjects)
         {
             bool isItemInTimeline = timelineItems.Any(x => (string)x["name"] == item.name);
             bool isItemSpawnedAndPickedUp = spawnedItems.Any(x => (x.name == item.name) && x.GetComponent<PickupItem>().isPickedUp);
+            Debug.Log(item.name + " " + isItemInTimeline + " " + isItemSpawnedAndPickedUp);
 
             if (isItemSpawnedAndPickedUp && isItemInTimeline)
             {
@@ -702,7 +701,6 @@ public class GameManager : MonoBehaviour
                 minDistanceItem = item;
             }
         }
-        string minDistanceItemName = char.ToLowerInvariant(minDistanceItem.name[0]) + minDistanceItem.name.Substring(1);
 
         // Add or subtract points depending on whether dig was successful
         if (minDistance <= maxDigDistance)
@@ -711,7 +709,7 @@ public class GameManager : MonoBehaviour
                                                                                            {"distanceFromNearestItem", minDistance},
                                                                                            {"nearestItemPositionX", minDistanceItem.transform.position.x},
                                                                                            {"nearestItemPositionZ", minDistanceItem.transform.position.z},
-                                                                                           {"nearestItemName", minDistanceItemName}});
+                                                                                           {"nearestItemName", minDistanceItem.name}});
             state.itemsFoundLastTrial++;
             controlMainCanvas.SetTaskDirectionsDisplay("PICK UP " + GetItemTypeStr().ToUpper() + ": " + (items.Length - 1).ToString() + " LEFT");
 
@@ -719,7 +717,7 @@ public class GameManager : MonoBehaviour
             minDistanceItem.GetComponent<PickupItem>().Pickup();
             spawnItems.HideItem(minDistanceItem);
         }
-        else if (items.Count() == 0) // i.e. all items have been dug
+        else if (minDistance == float.MaxValue) // i.e. all items have been dug
         {
             im.scriptedInput.ReportScriptedEvent("pickup", new Dictionary<string, object> {{"successful", false},
                                                                                            {"distanceFromNearestItem", -1}, // these -1s are for finding instances but should be removed from analysis
@@ -738,7 +736,7 @@ public class GameManager : MonoBehaviour
                                                                                            {"distanceFromNearestItem", minDistance},
                                                                                            {"nearestItemPositionX", minDistanceItem.transform.position.x},
                                                                                            {"nearestItemPositionZ", minDistanceItem.transform.position.z},
-                                                                                           {"nearestItemName", minDistanceItemName}});
+                                                                                           {"nearestItemName", minDistanceItem.name}});
             if (itemNotFoundEffect)
             {
                 Vector3 spawnPosition = gameObject.transform.position + new Vector3(0f, -1.18f, 0f);
@@ -793,7 +791,6 @@ public class GameManager : MonoBehaviour
                 minDistanceItem = item;
             }
         }
-        string minDistanceItemName = char.ToLowerInvariant(minDistanceItem.name[0]) + minDistanceItem.name.Substring(1);
 
         // Add or subtract points depending on whether dig was successful
         if (minDistance <= maxDigDistance)
@@ -803,7 +800,7 @@ public class GameManager : MonoBehaviour
                                                                                         {"distanceFromNearestItem", minDistance},
                                                                                         {"nearestItemPositionX", minDistanceItem.transform.position.x},
                                                                                         {"nearestItemPositionZ", minDistanceItem.transform.position.z},
-                                                                                        {"nearestItemName", minDistanceItemName}});
+                                                                                        {"nearestItemName", minDistanceItem.name}});
             state.itemsFoundLastTrial++;
             controlMainCanvas.SetTaskDirectionsDisplay("DIG FOR " + GetItemTypeStr().ToUpper() + ": " + (items.Length - 1).ToString() + " LEFT");
             if (itemFoundEffect)
@@ -812,7 +809,7 @@ public class GameManager : MonoBehaviour
             }
             Destroy(minDistanceItem);
         }
-        else if (items.Count() == 0) // i.e. all items have been dug
+        else if (minDistance == float.MaxValue) // i.e. all items have been dug
         {
             UpdateScore(wrongDigPenalty);
             im.scriptedInput.ReportScriptedEvent("dig", new Dictionary<string, object> {{"successful", false},
@@ -833,7 +830,7 @@ public class GameManager : MonoBehaviour
                                                                                         {"distanceFromNearestItem", minDistance},
                                                                                         {"nearestItemPositionX", minDistanceItem.transform.position.x},
                                                                                         {"nearestItemPositionZ", minDistanceItem.transform.position.z},
-                                                                                        {"nearestItemName", minDistanceItemName}});
+                                                                                        {"nearestItemName", minDistanceItem.name}});
             if (itemNotFoundEffect)
             {
                 Vector3 spawnPosition = gameObject.transform.position + new Vector3(0f, -1.18f, 0f);

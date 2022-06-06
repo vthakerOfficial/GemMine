@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8440382107864483646}
   - component: {fileID: 8440382107864483647}
   m_Layer: 0
-  m_Name: Gold_deposit
+  m_Name: goldDeposit
   m_TagString: Pickups
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -75,7 +75,7 @@ PrefabInstance:
     - target: {fileID: 8190781353737848073, guid: 3b0028421b45648cd9721ccad2866b49,
         type: 3}
       propertyPath: m_Name
-      value: Gold_deposit_original
+      value: goldDepositOriginal
       objectReference: {fileID: 0}
     - target: {fileID: 8190781353737848073, guid: 3b0028421b45648cd9721ccad2866b49,
         type: 3}
