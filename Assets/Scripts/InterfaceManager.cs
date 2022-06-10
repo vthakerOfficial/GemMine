@@ -237,10 +237,8 @@ public class InterfaceManager : MonoBehaviour {
 
     public void TestSyncbox(Action callback) {
         syncBox.Do(new EventBase(syncBox.StartPulse));
-        // TODO: JPB: (feature) Add this back in
-        //DoIn(new EventBase(syncBox.StopPulse), (int)GetSetting("syncBoxTestLength"));
-        DoIn(new EventBase(syncBox.StopPulse), 5000); 
-        DoIn(new EventBase(callback), 5000); 
+        DoIn(new EventBase(syncBox.StopPulse), (int)GetSetting("syncBoxTestLength"));
+        DoIn(new EventBase(callback), (int)GetSetting("syncBoxTestLength"));
     }
 
     public void LaunchLauncher() {
@@ -290,8 +288,6 @@ public class InterfaceManager : MonoBehaviour {
 
             // won't execute until mgr is ready
             //Do(new EventBase(LogExperimentInfo));
-
-            // TODO: JPB: (bug) put experiment version here
         }
         else {
             throw new Exception("No experiment configuration loaded");
