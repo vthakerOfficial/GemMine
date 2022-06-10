@@ -6,7 +6,7 @@ using UnityEngine;
 class ExperimentGameManager : GameManager {
     public int numTrialsInGame = 36; // must be divisible by 6
     public GameObject scheduledPauseCanvas; 
-    public GameObject endOfGameCanvas; 
+    public GameObject endOfGameCanvas;
     private ControlEndOfGameCanvas controlEndOfGameCanvas;
     private byte[] bytes;
 
@@ -21,7 +21,10 @@ class ExperimentGameManager : GameManager {
         Debug.Log(bytes);
 
         // Setup random variables for the first trial
-        state.isTimedTrial = DoorShuffle.IsTimed(bytes[0]);
+        if (timedTrialSystemEnabled)
+        {
+            state.isTimedTrial = DoorShuffle.IsTimed(bytes[0]);
+        }
         state.doorIndex = DoorShuffle.DoorIndex(bytes[0]);
 
         // List the trial events, in order
@@ -32,6 +35,10 @@ class ExperimentGameManager : GameManager {
             RunIndexWrapper(Encoding),
             RunIndexWrapper(ReturnToBase),
             DoWaitForReturn,
+            RunIndexWrapper(PreTimelineMsg),
+            ConditionalActions(timelineSystemEnabled, new List<Action> {
+                RunIndexWrapper(Timeline),
+                RunIndexWrapper(TimelineEnd)}),
             RunIndexWrapper(PreRetrievalDelayMsg),
             RunIndexWrapper(Delay),
             RunIndexWrapper(Retrieval),
@@ -71,18 +78,25 @@ class ExperimentGameManager : GameManager {
         // Set up random variables for the next trial
         if (state.trialsCompleted < numTrialsInGame)
         {
-            state.isTimedTrial = DoorShuffle.IsTimed(bytes[state.trialsCompleted]);
+            if (timedTrialSystemEnabled)
+            {
+                state.isTimedTrial = DoorShuffle.IsTimed(bytes[state.trialsCompleted]);
+            }
+            
             state.doorIndex = DoorShuffle.DoorIndex(bytes[state.trialsCompleted]);
         }
         else
         {
-            if (UnityEngine.Random.value > 0.5f)
+            if (timedTrialSystemEnabled)
             {
-                state.isTimedTrial = true;
-            }
-            else
-            {
-                state.isTimedTrial = false;
+                if (UnityEngine.Random.value > 0.5f)
+                {
+                    state.isTimedTrial = true;
+                }
+                else
+                {
+                    state.isTimedTrial = false;
+                }
             }
 
             state.doorIndex = UnityEngine.Random.Range(0, 3);
@@ -133,8 +147,8 @@ class ExperimentGameManager : GameManager {
         im.scriptedInput.ReportScriptedEvent("canvasActive", new Dictionary<string, object> { { "canvasName", "MainCanvas" }, { "isActive", false } });
         im.scriptedInput.ReportScriptedEvent("canvasActive", new Dictionary<string, object> { { "canvasName", "EndOfGameCanvas" }, { "isActive", true } });
         // Print end of game stats to the canvas
-        msg = (state.goldFoundTotal.ToString() + " (" + Math.Round(100f * state.goldFoundTotal / state.goldSpawnedTotal).ToString() + "%)\n" + // gold found (% of spawned gold found)
-               Math.Round(100f * state.goldFoundTotal / state.digsAttempted).ToString() + "%\n" + // digging accuracy
+        msg = (state.itemsFoundTotal.ToString() + " (" + Math.Round(100f * state.itemsFoundTotal / state.itemsSpawnedTotal).ToString() + "%)\n" + // gold found (% of spawned gold found)
+               Math.Round(100f * state.itemsFoundTotal / state.digsAttempted).ToString() + "%\n" + // digging accuracy
                state.score); // final score
         controlEndOfGameCanvas.SetStatDisplay(msg);
         controlEndOfGameCanvas.playAudio(true);

@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class SpawnItems : MonoBehaviour
@@ -8,10 +9,12 @@ public class SpawnItems : MonoBehaviour
     public float xMaxRange = 31.5f;
     public float zMinRange = 1.5f;
     public float zMaxRange = 31.5f;
-    public GameObject spawnItem; // what prefab to spawn
+    public GameObject goldObject; // prefab to spawn
+    public GameObject[] gemObjects; // prefabs to spawn
     protected InterfaceManager im;
     private GameObject[] items;
-    private int goldSpawnNumber = 0;
+    private int numItemsSpawned = 0;
+    private System.Random rng = new System.Random();
 
     void Awake()
     {
@@ -22,65 +25,109 @@ public class SpawnItems : MonoBehaviour
         }
     }
 
-    public void Spawn(int nItems)
+    public void SpawnGold(int nItems)
     {
-        Vector3[] spawnPositions = new Vector3[nItems];
         im.scriptedInput.ReportScriptedEvent("goldSpawned", new Dictionary<string, object> { { "nItems", nItems } });
+        for (int i = 0; i < nItems; i++)
+        {
+            SpawnItem(goldObject);
+        }
+    }
 
-        for (int iPos = 0; iPos < nItems; iPos++)
+    public void SpawnGems(int nItems)
+    {
+        if (nItems > gemObjects.Length)
+        {
+            im.Do(new EventBase<string, int>(im.ShowWarning, "The game is trying to spawn repeat gems. Please quit the game.", 5000));
+        }
+
+        im.scriptedInput.ReportScriptedEvent("gemsSpawned", new Dictionary<string, object> { { "nItems", nItems } });
+        var indices = Enumerable.Range(0, gemObjects.Length).ToList();
+        indices.Shuffle(rng);
+        for (int i = 0; i < nItems; i++)
+        {
+            SpawnItem(gemObjects[indices[i]], 2);
+        }
+    }
+
+    public GameObject SpawnItem(GameObject item, float scaleSize = 1, Vector3? position = null, Quaternion? rotation = null)
+    {
+        Vector3 spawnPosition = new Vector3();
+        GameObject spawnedItem;
+
+        if (position.HasValue)
+        {
+            spawnedItem = Instantiate(item, position.Value, rotation ?? item.transform.rotation);
+        }
+        else
         {
             // Randomly generate a spawn position that doesn't collide with other objects
             int nCollisions = 1;
             while (nCollisions > 0)
             {
-                spawnPositions[iPos].x = Random.Range(xMinRange, xMaxRange);
-                spawnPositions[iPos].y = 0.0f;
-                spawnPositions[iPos].z = Random.Range(zMinRange, zMaxRange);
+                spawnPosition.x = Random.Range(xMinRange, xMaxRange);
+                spawnPosition.y = item.transform.GetComponent<BoxCollider>().size.y;
+                spawnPosition.z = Random.Range(zMinRange, zMaxRange);
 
-                Collider[] hitColliders = Physics.OverlapBox(spawnPositions[iPos] + new Vector3(0.0f, 0.55f, 0.0f), 
+                Collider[] hitColliders = Physics.OverlapBox(spawnPosition + new Vector3(0.0f, 0.55f, 0.0f),
                                                              new Vector3(0.5f, 0.5f, 0.5f));
                 nCollisions = hitColliders.Length;
             }
+            spawnedItem = Instantiate(item, spawnPosition, rotation ?? item.transform.rotation);
+        }
+        
 
-            // Spawn the game object
-            GameObject spawnedItem = Instantiate(spawnItem, spawnPositions[iPos], gameObject.transform.rotation) as GameObject;
-            goldSpawnNumber++;
-            spawnedItem.name = "gold";
-            spawnedItem.GetComponent<WorldDataReporter>().reportingID = "gold" + goldSpawnNumber.ToString("D4");
-            im.scriptedInput.ReportScriptedEvent("goldLocation", new Dictionary<string, object> { 
-                {"reportingId", spawnedItem.GetComponent<WorldDataReporter>().reportingID}, 
-                { "positionX", spawnPositions[iPos].x }, 
-                { "positionZ", spawnPositions[iPos].z } 
+        // Spawn the game object
+        //GameObject spawnedItem = Instantiate(item, spawnPosition, item.transform.rotation);
+        spawnedItem.name = item.name;
+        spawnedItem.transform.localScale = spawnedItem.transform.localScale * scaleSize;
+        spawnedItem.GetComponent<WorldDataReporter>().reportingID = item.name + numItemsSpawned.ToString("D4");
+        spawnedItem.AddComponent<PickupItem>();
+
+        // Make the parent the spawner so hierarchy doesn't get super messy
+        spawnedItem.transform.parent = gameObject.transform;
+
+        // Misc
+        numItemsSpawned++;
+        im.scriptedInput.ReportScriptedEvent(item.name + "Location", new Dictionary<string, object> {
+                {"reportingId", spawnedItem.GetComponent<WorldDataReporter>().reportingID},
+                { "positionX", spawnPosition.x },
+                { "positionZ", spawnPosition.z }
             });
 
+        return spawnedItem;
+    }
 
-            // Make the parent the spawner so hierarchy doesn't get super messy
-            spawnedItem.transform.parent = gameObject.transform;
-        }
+    public void HideItem(GameObject item)
+    {
+        item.GetComponentInChildren<Renderer>().enabled = false;
     }
 
     public void HideItems()
     {
-        Renderer rend;
-
         items = GameObject.FindGameObjectsWithTag("Pickups");
         foreach (GameObject item in items)
         {
-            rend = item.GetComponent<Renderer>();
-            rend.enabled = false;
+            HideItem(item);
         }
+    }
+
+    public void UnhideItem(GameObject item)
+    {
+        item.GetComponentInChildren<Renderer>().enabled = true;
     }
 
     public void UnhideItems()
     {
-        Renderer rend;
-
         items = GameObject.FindGameObjectsWithTag("Pickups");
         foreach (GameObject item in items)
         {
-            rend = item.GetComponent<Renderer>();
-            rend.enabled = true;
+            UnhideItem(item);
         }
+    }
+
+    public bool isItemHidden(GameObject item) {
+        return !item.GetComponentInChildren<Renderer>().enabled;
     }
 
     public void DestroyItems()
@@ -90,5 +137,19 @@ public class SpawnItems : MonoBehaviour
         {
             Destroy(item);
         }
+    }
+
+    public GameObject[] GetItems()
+    {
+        //items = GameObject.FindGameObjectsWithTag("Pickups");
+        return GameObject.FindGameObjectsWithTag("Pickups");
+    }
+
+    public GameObject[] GetVisibleItems()
+    {
+        //items = GameObject.FindGameObjectsWithTag("Pickups");
+        return GameObject.FindGameObjectsWithTag("Pickups")
+            .Where(x => x.GetComponentInChildren<Renderer>().enabled)
+            .ToArray();
     }
 }

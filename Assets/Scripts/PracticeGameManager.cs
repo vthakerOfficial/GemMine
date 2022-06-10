@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
+using System.Threading;
 
 class PracticeGameManager : GameManager {
 
@@ -19,18 +21,34 @@ class PracticeGameManager : GameManager {
 
     private Dictionary<string, string> tutorial = new Dictionary<string, string>
     {
-        {"welcome", "Welcome to Goldmine!\n\nIn this game, you will be searching and then digging for gold over a number of rounds.\n\nPlease ask questions as we go through this tutorial.\n\n(Press space to continue)"},
-        {"instruct 1", "Each round begins here in the mine base. First, you will have 30 seconds to search for one or more pieces of gold that appear on the ground in the mine ('Gold-search' trials). Try to remember where each gold piece is, as you will need to return there later.\n\nAfter 30 seconds, the gold will disappear, and you will be asked to go back to the base."},
-        {"instruct 2", "Next, you will have another 30 seconds to go back into the mine and try to dig up the gold that you just found ('Digging' trials). This time the gold will be hidden from view, so you have to dig at the place where you remember it being."},
-        {"instruct 3", "Before each trial, there is a short waiting time in the base, during which you are asked to prepare for the next trial.\n\nIn the waiting time before Digging trials, please try to visualize a path back to the gold that you are intending to dig.\n\nAfter the waiting time, a door will open to your left, right, or center and let you out into the mine. Only one door will open to let you out of the base, but you can re-enter through any door."},
-        {"instruct 4", "SCORING\nThe goal of this game is to get as many points as you can.\n>  Digging at a correct gold location is worth +10 points\n>  Digging at an incorrect location costs -2 points\n\nGAME CONTROLS\n>  Rotate your view by moving the mouse\n>  Move forward by clicking and holding the left mouse button\n>  Dig by pressing the spacebar (1 keypress = 1 dig)\n\nTASK TOOLBAR\nA toolbar at the top of your screen shows your current instructions (top left) and score (top right)."},
-        {"instruct 5", "Let's do one round now for practice. Remember, we will start with the Gold-searching trial."},
+        {"welcome gold", "Welcome to Goldmine!\n\nIn this game, you will be searching and then digging for gold over a number of rounds.\n\nPlease ask questions as we go through this tutorial.\n\n(Press space to continue)"},
+        {"welcome items", "Welcome to Goldmine!\n\nIn this game, you will be searching and then digging for items over a number of rounds.\n\nPlease ask questions as we go through this tutorial.\n\n(Press space to continue)"},
+        {"instruct pickup gold", "Each round begins here in the mine base. First, you will have 30 seconds to search for " + (pickupSystemEnabled ? "and pickup " : "") + "one or more pieces of gold that appear on the ground in the mine ('Search' trials). Try to remember where each gold piece is, as you will need to return there later.\n\nAfter 30 seconds, the gold will disappear, and you will be asked to go back to the base."},
+        {"instruct pickup items", "Each round begins here in the mine base. First, you will have 30 seconds to search for " + (pickupSystemEnabled ? "and pickup " : "") + "one or more items that appear on the ground in the mine ('Search' trials). Also, try to remember where each item is, as you will need to return there later.\n\nAfter 30 seconds, the item will disappear, and you will be asked to go back to the base."},
+        {"instruct timeline gold", "Next, you will have 18 seconds to place all of the gold that you picked up during your search onto a timeline that represents the 30 seconds of the searching trial. Try to place the gold pieces on the timeline at the relative time that you found them. Only place gold pieces that you picked up during the most recent search onto the timeline."},
+        {"instruct timeline items", "Next, you will have 18 seconds to place all of the items that you picked up during your search onto a timeline that represents the 30 seconds of the searching trial. Try to place the items on the timeline in the order and at the relative time that you found them. Only place items that you picked up during the most recent search onto the timeline."},
+        {"instruct digging gold", "Finally, you will have another 30 seconds to go back into the mine and try to dig up the gold that you just found ('Digging' trials). This time the gold will be hidden from view, so you have to dig at the place where you remember it being."},
+        {"instruct digging items", "Finally, you will have another 30 seconds to go back into the mine and try to dig up the items that you just found ('Digging' trials). This time the items will be hidden from view, so you have to dig at the place where you remember it being."},
+        {"instruct delay gold", "Before each trial, there is a short waiting time in the base, during which you are asked to prepare for the next trial.\n\nIn the waiting time before Digging trials, please try to visualize a path back to the gold that you are intending to dig.\n\nAfter the waiting time, a door will open to your left, right, or center and let you out into the mine. Only one door will open to let you out of the base, but you can re-enter through any door."},
+        {"instruct delay items", "Before each trial, there is a short waiting time in the base, during which you are asked to prepare for the next trial.\n\nIn the waiting time before Digging trials, please try to visualize a path back to the items that you are intending to dig.\n\nAfter the waiting time, a door will open to your left, right, or center and let you out into the mine. Only one door will open to let you out of the base, but you can re-enter through any door."},
+        {"instruct scoring gold", "SCORING\n\nThe goal of this game is to get as many points as you can.\n\n" + (timelineSystemEnabled ? ">  Placing a gold piece on the timeline that was picked up is worth +10 points\n>  Placing a gold piece on the timeline that was not picked up costs -2 points. \n>  Not placing a gold piece on the timeline that was picked up costs -2 points.\n\n" : "") + ">  Digging at a correct gold location is worth +10 points\n>  Digging at an incorrect location costs -2 points\n\n"},
+        {"instruct scoring items", "SCORING\n\nThe goal of this game is to get as many points as you can.\n\n" + (timelineSystemEnabled ? ">  Placing an item on the timeline that was picked up is worth +10 points\n>  Placing an item on the timeline that was not picked up costs -2 points. \n>  Not placing an item on the timeline that was picked up costs -2 points.\n\n" : "") + ">  Digging at a correct item location is worth +10 points\n>  Digging at an incorrect location costs -2 points\n\n"},
+        {"instruct controls gold", "GAME CONTROLS\n\n>  Rotate your view by moving the mouse\n>  Move forward by clicking and holding the left mouse button\n" + (pickupSystemEnabled ? ">  Pickup a gold piece by pressing the spacebar\n" : "") + ">  Dig by pressing the spacebar (1 keypress = 1 dig)"},
+        {"instruct controls items", "GAME CONTROLS\n\n>  Rotate your view by moving the mouse\n>  Move forward by clicking and holding the left mouse button\n" + (pickupSystemEnabled ? ">  Pickup an item by pressing the spacebar\n" : "") + ">  Dig by pressing the spacebar (1 keypress = 1 dig)"},
+        {"instruct hud", "TASK TOOLBAR\n\nA toolbar at the top of your screen shows your current instructions (top left) and score (top right)."},
+        {"instruct final", "Let's do one round now for practice. Remember, we will start with the searching trial."},
+        {"pickup gold", "Pickup trial: There is a crosshair on the ground in front of you that shows where you are aiming, and you can press the spacebar when you are ready to pickup a piece of gold."},
+        {"pickup items", "Pickup trial: There is a crosshair on the ground in front of you that shows where you are aiming, and you can press the spacebar when you are ready to pickup an item."},
         {"encoding 1 end", "30 seconds are up. Now you should return to the base."},
-        {"digging", "Digging trial: Now you will try to dig up the gold that you found on the last trial. There is a crosshair on the ground in front of you that shows where you are aiming, and you can press the spacebar when you are ready to dig."},
-        {"trial 1 end", "You completed one round! Let's try one more. This time, a right arrow will appear on your screen at the end of the waiting time to tell you that the right door has opened for this round.\n\nNote: you don’t need to remember the location of gold from the previous round to the next one."},
+        {"timeline gold", "Timeline trial: Now you will try to place on the timeline the item that you found on the last trial."},
+        {"timeline items", "Timeline trial: Now you will try to place on the timeline the item that you found on the last trial."},
+        {"digging gold", "Digging trial: Now you will try to dig up the gold that you found on the last trial. There is a crosshair on the ground in front of you that shows where you are aiming, and you can press the spacebar when you are ready to dig."},
+        {"digging items", "Digging trial: Now you will try to dig up the items that you found on the last trial. There is a crosshair on the ground in front of you that shows where you are aiming, and you can press the spacebar when you are ready to dig."},
+        {"trial 1 end gold", "You completed one round! Let's try one more. This time, a right arrow will appear on your screen at the end of the waiting time to tell you that the right door has opened for this round.\n\nNote: you don’t need to remember the location of gold from the previous round to the next one."},
+        {"trial 1 end items", "You completed one round! Let's try one more. This time, a right arrow will appear on your screen at the end of the waiting time to tell you that the right door has opened for this round.\n\nNote: you don’t need to remember the location of items from the previous round to the next one."},
         {"trial 2 end", "Well done! We will do a final practice round now before starting the real game.\n\n"},
         {"time penalty", "There's one last thing to know. Some rounds (like this one) have a time penalty. This means that if you are not back at the base after 30 seconds, you will lose 5 points.\n\nSince there is no explicit timer, you will have to keep track of how much time has passed in your head."},
-        {"no time penalty", "On rounds that don't have a time penalty, you can spend the whole 30 seconds searching or digging for gold without worrying about the time.\n\n"},
+        {"no time penalty", "On rounds that don't have a time penalty, you can spend the whole 30 seconds searching or digging without worrying about the time.\n\n"},
         {"repeat or not", "Great job! Press space to move on or r to repeat this tutorial."},
         {"tutorial end 1", "The full game lasts for 36 rounds, with breaks after 12 and 24 rounds. You can press p to pause at any point if you need to."},
         {"tutorial end 2", "Please try not to talk during the experiment. You should keep your head and arms as still as possible, and stay focused on the game even during the waiting periods in the base.\n\nThank you for your participation, and good luck!"},
@@ -48,58 +66,88 @@ class PracticeGameManager : GameManager {
 
         FreezeAtBase();
 
+        string itemTypeStr = GetItemTypeStr();
+
+        // Setup "Run" state machine
         stateMachine["Run"] = new List<Action> {
             RunIndexWrapper(InstantiateGold),
-            WriteToCanvas("welcome"),
-            WriteToCanvas("instruct 1"),
-            WriteToCanvas("instruct 2"),
-            WriteToCanvas("instruct 3"),
-            WriteToCanvas("instruct 4"),
-            WriteToCanvas("instruct 5"),
+
+            // Instructions
+            WriteToCanvas("welcome " + itemTypeStr),
+            WriteToCanvas("instruct pickup " + itemTypeStr),
+            ConditionalAction(timelineSystemEnabled,
+                WriteToCanvas("instruct timeline " + itemTypeStr)),
+            WriteToCanvas("instruct digging " + itemTypeStr),
+            WriteToCanvas("instruct delay " + itemTypeStr),
+            WriteToCanvas("instruct scoring " + itemTypeStr),
+            WriteToCanvas("instruct controls " + itemTypeStr),
+            WriteToCanvas("instruct hud"),
+            WriteToCanvas("instruct final"),
+
+            // Practice trial 1
             RunIndexWrapper(PreEncodingDelayMsg),
             RunIndexWrapper(Delay),
+            ConditionalAction(pickupSystemEnabled,
+                WriteToCanvas("pickup " + itemTypeStr)),
             RunIndexWrapper(TutorialEncoding1),
             WriteToCanvas("encoding 1 end"),
             RunIndexWrapper(ReturnToBase),
             DoWaitForReturn,
+            ConditionalActions(timelineSystemEnabled, new List<Action> {
+                WriteToCanvas("timeline " + itemTypeStr),
+                RunIndexWrapper(TutorialTimeline),
+                RunIndexWrapper(TutorialTimelineEnd) }),
             RunIndexWrapper(PreRetrievalDelayMsg),
             RunIndexWrapper(Delay),
-            WriteToCanvas("digging"),
+            WriteToCanvas("digging " + itemTypeStr),
             RunIndexWrapper(Retrieval),
             RunIndexWrapper(ReturnToBase),
             DoWaitForReturn,
-            WriteToCanvas("trial 1 end"),
+            WriteToCanvas("trial 1 end " + itemTypeStr),
 
+            // Practice trial 2
             RunIndexWrapper(PreEncodingDelayMsg),
             RunIndexWrapper(Delay),
             RunIndexWrapper(TutorialEncoding2),
             RunIndexWrapper(ReturnToBase),
             DoWaitForReturn,
+            ConditionalActions(timelineSystemEnabled, new List<Action> {
+                RunIndexWrapper(TutorialTimeline),
+                RunIndexWrapper(TutorialTimelineEnd) }),
             RunIndexWrapper(PreRetrievalDelayMsg),
             RunIndexWrapper(Delay),
             RunIndexWrapper(Retrieval),
             RunIndexWrapper(ReturnToBase),
             DoWaitForReturn,
-            WriteToCanvas("trial 2 end"),
 
-            RunIndexWrapper(PreEncodingDelayMsg),
-            RunIndexWrapper(Delay),
-            WriteToCanvas("time penalty"),
-            WriteToCanvas("no time penalty"),
-            RunIndexWrapper(TutorialEncoding3),
-            RunIndexWrapper(ReturnToBase),
-            DoWaitForReturn,
-            RunIndexWrapper(PreRetrievalDelayMsg),
-            RunIndexWrapper(Delay),
-            RunIndexWrapper(Retrieval),
-            RunIndexWrapper(ReturnToBase),
-            DoWaitForReturn,
+            ConditionalActions(timedTrialSystemEnabled, new List<Action> {
+                // Practice trial 3
+                WriteToCanvas("trial 2 end"),
+                RunIndexWrapper(PreEncodingDelayMsg),
+                RunIndexWrapper(Delay),
+                WriteToCanvas("time penalty"),
+                WriteToCanvas("no time penalty"),
+                RunIndexWrapper(TutorialEncoding3),
+                RunIndexWrapper(ReturnToBase),
+                DoWaitForReturn,
+                ConditionalActions(timelineSystemEnabled, new List<Action> {
+                    RunIndexWrapper(TutorialTimeline),
+                    RunIndexWrapper(TutorialTimelineEnd) }),
+                RunIndexWrapper(PreRetrievalDelayMsg),
+                RunIndexWrapper(Delay),
+                RunIndexWrapper(Retrieval),
+                RunIndexWrapper(ReturnToBase),
+                DoWaitForReturn,
+            }),
+
+            // End tutorial
             DoRepeatOrContinue,
             WriteToCanvas("tutorial end 1"),
             WriteToCanvas("tutorial end 2"),
             LaunchExperiment
         };
 
+        // Setup "loop" state machine
         state.loopIndex = 0;
         stateMachine["loop"] = new List<Action> {
             RunIndexWrapperLoop(InitTrial),
@@ -252,7 +300,7 @@ class PracticeGameManager : GameManager {
         // Log
         im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "CheckGold1Dug" } });
 
-        if (state.goldFoundLastTrial == 0)
+        if (state.itemsFoundLastTrial == 0)
         {
             state.loopIndex = 0;
             gold1Box.SetActive(true);
@@ -301,23 +349,27 @@ class PracticeGameManager : GameManager {
         im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "InstantiateGold" } });
 
         // Destroy any existing gold objects
-        golds = GameObject.FindGameObjectsWithTag("Pickups");
-        for (int iGold = 0; iGold < golds.Length; iGold++)
+        var items = GameObject.FindGameObjectsWithTag("Pickups");
+        for (int iGold = 0; iGold < items.Length; iGold++)
         {
-            Destroy(golds[iGold]);
+            Destroy(items[iGold]);
         }
 
-        // Create the new gold objects
-        gold1 = Instantiate(spawnGold.spawnItem, gold1Location.transform.position, gold1Location.transform.rotation) as GameObject;
-        gold2 = Instantiate(spawnGold.spawnItem, gold2Location.transform.position, gold2Location.transform.rotation) as GameObject;
-        gold3 = Instantiate(spawnGold.spawnItem, gold3Location.transform.position, gold3Location.transform.rotation) as GameObject;
-        gold1.name = "gold";
-        gold2.name = "gold";
-        gold3.name = "gold";
-        gold1.SetActive(false);
-        gold2.SetActive(false);
-        gold3.SetActive(false);
-        goldToFind = 1;
+        //// Create the new gold objects
+        //gold1 = spawnItems.SpawnItem(spawnItems.goldObject, 1, gold1.transform.position, gold1.transform.rotation);
+        //gold1.transform.position = gold1Location.transform.position;
+        //gold1.transform.rotation = gold1Location.transform.rotation;
+        //gold1.SetActive(false);
+        //gold2 = spawnItems.SpawnItem(spawnItems.goldObject);
+        //gold2.transform.position = gold2Location.transform.position;
+        //gold2.transform.rotation = gold2Location.transform.rotation;
+        //gold2.SetActive(false);
+        //gold3 = spawnItems.SpawnItem(spawnItems.goldObject);
+        //gold3.transform.position = gold3Location.transform.position;
+        //gold3.transform.rotation = gold3Location.transform.rotation;
+        //gold3.SetActive(false);
+
+        itemsToFind = 1;
         gameEvents.Do(new EventBase(Run));
     }
 
@@ -338,6 +390,13 @@ class PracticeGameManager : GameManager {
         state.doorIndex = 2;
         state.isTimedTrial = false;
 
+        // Show the dig crosshair
+        if (pickupSystemEnabled)
+        {
+            state.pickupEnabled = true;
+            digCrosshair.SetActive(true);
+        }
+
         // Unfreeze the player
         controlPlayer.Freeze(false);
 
@@ -347,12 +406,22 @@ class PracticeGameManager : GameManager {
         controlBase.OpenDoors(iDoors, true, true);
 
         // Reveal gold in the environment
-        gold1.SetActive(true);
-        spawnGold.UnhideItems();
+        gold1 = spawnItems.SpawnItem(spawnItems.goldObject, 1, gold1Location.transform.position, gold1Location.transform.rotation);
+        //gold1.SetActive(true);
+        //spawnItems.UnhideItems();
 
         // Update canvas displays
-        controlMainCanvas.SetTopDisplay("FIND 1 GOLD", "default", 0.75f);
-        controlMainCanvas.SetTaskDirectionsDisplay("FIND 1 GOLD");
+        string itemTypeStr = GetItemTypeStr();
+        if (pickupSystemEnabled)
+        {
+            controlMainCanvas.SetTopDisplay("PICK UP 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("PICK UP 1 " + itemTypeStr.ToUpper() + " LEFT");
+        }
+        else
+        {
+            controlMainCanvas.SetTopDisplay("FIND 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("FIND 1 " + itemTypeStr.ToUpper());
+        }
 
         if (state.isTimedTrial)
         {
@@ -366,11 +435,18 @@ class PracticeGameManager : GameManager {
     public void TutorialEncoding2()
     {
         // Log
-        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "TutorialEncoding2Part1" } });
+        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "TutorialEncoding2" } });
 
         playerActive = true;
         state.doorIndex = 0;
         state.isTimedTrial = false;
+
+        // Show the dig crosshair
+        if (pickupSystemEnabled)
+        {
+            state.pickupEnabled = true;
+            digCrosshair.SetActive(true);
+        }
 
         // Unfreeze the player
         controlPlayer.Freeze(false);
@@ -381,11 +457,21 @@ class PracticeGameManager : GameManager {
         controlBase.OpenDoors(iDoors, true, true);
 
         // Reveal gold in the environment
-        gold2.SetActive(true);
+        gold2 = spawnItems.SpawnItem(spawnItems.goldObject, 1, gold2Location.transform.position, gold2Location.transform.rotation);
+        //gold2.SetActive(true);
 
         // Update canvas displays
-        controlMainCanvas.SetTopDisplay("FIND 1 GOLD", "default", 0.75f);
-        controlMainCanvas.SetTaskDirectionsDisplay("FIND 1 GOLD");
+        string itemTypeStr = GetItemTypeStr();
+        if (pickupSystemEnabled)
+        {
+            controlMainCanvas.SetTopDisplay("PICK UP 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("PICK UP 1 " + itemTypeStr.ToUpper() + " LEFT");
+        }
+        else
+        {
+            controlMainCanvas.SetTopDisplay("FIND 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("FIND 1 " + itemTypeStr.ToUpper());
+        }
 
         if (state.isTimedTrial)
         {
@@ -399,11 +485,18 @@ class PracticeGameManager : GameManager {
     public void TutorialEncoding3()
     {
         // Log
-        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "TutorialEncoding2Part1" } });
+        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "TutorialEncoding3" } });
 
         playerActive = true;
         state.doorIndex = 1;
         state.isTimedTrial = true;
+
+        // Show the dig crosshair
+        if (pickupSystemEnabled)
+        {
+            state.pickupEnabled = true;
+            digCrosshair.SetActive(true);
+        }
 
         // Unfreeze the player
         controlPlayer.Freeze(false);
@@ -414,11 +507,21 @@ class PracticeGameManager : GameManager {
         controlBase.OpenDoors(iDoors, true, true);
 
         // Reveal gold in the environment
-        gold3.SetActive(true);
+        gold3 = spawnItems.SpawnItem(spawnItems.goldObject, 1, gold3Location.transform.position, gold3Location.transform.rotation);
+        //gold3.SetActive(true);
 
         // Update canvas displays
-        controlMainCanvas.SetTopDisplay("FIND 1 GOLD", "default", 0.75f);
-        controlMainCanvas.SetTaskDirectionsDisplay("FIND 1 GOLD");
+        string itemTypeStr = GetItemTypeStr();
+        if (pickupSystemEnabled)
+        {
+            controlMainCanvas.SetTopDisplay("PICK UP 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("PICK UP 1 " + itemTypeStr.ToUpper() + " LEFT");
+        }
+        else
+        {
+            controlMainCanvas.SetTopDisplay("FIND 1 " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("FIND 1 " + itemTypeStr.ToUpper());
+        }
 
         if (state.isTimedTrial)
         {
@@ -427,6 +530,94 @@ class PracticeGameManager : GameManager {
         }
 
         gameEvents.DoIn(new EventBase(Run), taskDuration);
+    }
+
+    // Timeline
+    protected void TutorialTimeline()
+    {
+        // Log
+        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "TutorialTimeline" } });
+
+        // Reset the player
+        FreezeAtBase();
+
+        // Show the timeline
+        timelineCanvas.SetActive(true);
+        // The following two lines are a hack because unity wasn't displaying the camera correctly
+        timelineCanvas.GetComponent<Canvas>().worldCamera.enabled = false;
+        timelineCanvas.GetComponent<Canvas>().worldCamera.enabled = true;
+
+        // Spawn the timeline items
+        var otherTimelineItems = spawnItems.gemObjects.Where(x => x.name != "goldDeposit").ToList().GetRange(0, 7);
+        var timelineItems = new List<GameObject> { spawnItems.goldObject, otherTimelineItems };
+        controlTimeline.SpawnTimelineItems(timelineItems.ToArray());
+
+        // Unlock the mouse
+        im.LockCursor(CursorLockMode.None);
+
+        // Update canvas displays
+        string itemTypeStr = GetItemTypeStr();
+        controlMainCanvas.SetTaskDirectionsDisplay("PLACE " + itemTypeStr.ToUpper() + " ON TIMELINE");
+
+        gameEvents.DoIn(new EventBase(Run), timelineDuration);
+    }
+
+    protected void TutorialTimelineEnd()
+    {
+        // Report item times
+        var timelineItems = timelineCanvas.transform.Find("Timeline").GetComponent<ControlTimeline>().GetItemTimes(timelineDuration / 1000);
+        im.scriptedInput.ReportScriptedEvent("timeline", new Dictionary<string, object> { { "items", timelineItems } });
+        //Debug.Log(JsonConvert.SerializeObject(new Dictionary<string, object> { { "items", timelineItems } }));
+
+        // Update the score
+        int scoreDelta = 0;
+        var fakeSpawnedItems = spawnItems.GetItems().ToList();
+        var otherTimelineItems = spawnItems.gemObjects.Where(x => x.name != "goldDeposit").ToList().GetRange(0, 7);
+        fakeSpawnedItems.Add(otherTimelineItems);
+        foreach (var item in new List<GameObject> { spawnItems.goldObject, otherTimelineItems })
+        {
+            bool isItemInTimeline = timelineItems.Any(x => (string)x["name"] == item.name);
+            bool isItemSpawnedAndPickedUp = fakeSpawnedItems.Any(
+                x => (x.name == item.name) &&
+                     (x.GetComponent<PickupItem>() == null ? false : x.GetComponent<PickupItem>().isPickedUp)
+            );
+            Debug.Log(item.name + " " + isItemInTimeline + " " + isItemSpawnedAndPickedUp);
+
+            if (isItemSpawnedAndPickedUp && isItemInTimeline)
+            {
+                // Item correctly placed on timeline
+                scoreDelta += correctTimelineReward;
+            }
+            else if (!isItemSpawnedAndPickedUp && isItemInTimeline)
+            {
+                // Item incorrectly placed on timeline
+                scoreDelta += wrongTimelinePenalty;
+            }
+            else if (isItemSpawnedAndPickedUp && !isItemInTimeline)
+            {
+                // Item not placed on timeline when it should be
+                scoreDelta += wrongTimelinePenalty;
+            }
+        }
+        UpdateScore(scoreDelta); 
+
+        // Lock the mouse
+        im.LockCursor(CursorLockMode.Locked);
+
+        gameEvents.DoIn(new EventBase(
+            () => {
+                // Delete timeline items
+                foreach (var item in controlTimeline.GetTimelineItems())
+                {
+                    Destroy(item);
+                }
+
+                // Hide the timeline 
+                timelineCanvas.SetActive(false);
+
+                Run();
+            }),
+            timelineScoreDuration);
     }
 
     public void DoRepeatOrContinue() {

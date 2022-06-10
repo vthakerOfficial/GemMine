@@ -2,11 +2,16 @@
 using System.Dynamic;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+using Newtonsoft.Json;
+using System.Threading;
 
 public class GameManager : MonoBehaviour
 {
+    // Version number
+    const string TASK_VERSION = "Goldmine-2.0.0";
 
     // Singleton Boilerplate
     public static GameManager gm;
@@ -16,22 +21,28 @@ public class GameManager : MonoBehaviour
     public GameObject player; // the player
     public GameObject playerAnimationSpawnPoint; // spawn point for animations that appear on the ground in front of the player
     public GameObject digCrosshair; // object with the dig crosshair image
-    public GameObject spawner; // the gold spawner
+    public GameObject spawner; // the item spawner
     public GameObject mineBase; // base where the player spawns
     public GameObject mainCanvas; // the main canvas on which text is displayed
-    public GameObject goldFoundEffect; // particle system that plays when player digs and gold is found
-    public GameObject goldNotFoundEffect; // particle system that plays when player digs and gold is not found
+    public GameObject itemFoundEffect; // particle system that plays when player digs an item is found
+    public GameObject itemNotFoundEffect; // particle system that plays when player digs an item is not found
+    public GameObject timelineCanvas;
     public AudioClip pointGainSFX; // sound that plays when points are added
     public AudioClip pointLossSFX; // sound that plays when points are subtracted
 
     // TODO: move to config file?
-    public int goldToFind = 1; // how many gold objects are placed in the environment
+    public int itemsToFind = 4; // how many items are placed in the environment
     public int delayDuration = 10000; // duration of the delay phases
+    public int timelineDuration = 18000; // duration of the timeline phase
+    public int timelineScoreDuration = 2000; // duration of the timeline score display
     public int taskDuration = 30000; // duration of the task phases (encoding, retrieval)
-    public int returnToBasePenalty = -5; // penalty for not returning to the base in time
+    public int returnToBasePenalty = -5; // penalty for not eturning to the base in time
     public int wrongDigPenalty = -2; // penalty for digging in the wrong place
     public int goldFoundReward = 10; // points for each gold piece found
-    public float maxDigDistance = 4f; // max distance player can dig from gold to get points
+    public int gemFoundReward = 10; // points for each gem found
+    public int correctTimelineReward = 10; // points for each item correctly placed on timeline
+    public int wrongTimelinePenalty = -2; // penalty for each item incorrectly placed on timeline or items not placed on timeline when they should be
+    public float maxDigDistance = 4f; // max distance player can dig from items to get points
     public int eventsPerFrame = 5;
     public bool playerActive = false; // whether the player is in an active task state or not
     // HUD text displays
@@ -40,23 +51,41 @@ public class GameManager : MonoBehaviour
 
     // External Runtime Collected Game Objects
     protected ControlPlayer controlPlayer;
-    protected SpawnItems spawnGold;
+    protected SpawnItems spawnItems;
     protected ControlBase controlBase;
     protected ControlCanvas controlMainCanvas;
-    protected GameObject[] golds;
-    private GameObject minDistanceGold;
+    protected ControlTimeline controlTimeline;
+
+    private GameObject minDistanceItem;
+    private AudioSource pickupAudioSource;
     private AudioSource digAudioSource;
     //private WorldDataReporter baseReporter;
-    private bool[] pastTrialPerformance = {false, false}; // player performance info over the past two trials
+    private bool[] pastTrialPerformance = { false, false }; // player performance info over the past two trials
     private bool lastActiveState;
 
     public EventQueue gameEvents; // We want this class to inherit from game object, since we have so
-                                     // many objects to keep track of, and multiple inheritance isn't 
-                                     // allowed, so use composition instead
+                                  // many objects to keep track of, and multiple inheritance isn't 
+                                  // allowed, so use composition instead
 
     protected Dictionary<string, List<Action>> stateMachine;
 
     protected dynamic state;
+
+
+
+    public enum ItemType {
+        gold,
+        gems
+    }
+    protected ItemType itemType = ItemType.gems;
+    public string GetItemTypeStr() { return itemType == ItemType.gold ? "gold" : "items"; }
+    //public string GetItemTypeStr() { return Enum.GetName(itemType.GetType(), itemType); }
+
+    public static bool timelineSystemEnabled { get; private set; } = true;
+    public static bool pickupSystemEnabled { get; private set; } = true;
+    public static bool timedTrialSystemEnabled { get; private set; } = false;
+    public static bool scaleDifficultySystem { get; private set; } = false;
+
 
     protected void Awake()
     {
@@ -64,7 +93,7 @@ public class GameManager : MonoBehaviour
         CollectReferences();
     }
 
-    protected virtual void Start() {   
+    protected virtual void Start() {
         gameEvents = new EventQueue();
         stateMachine = new Dictionary<string, List<Action>>();
         state = new ExpandoObject();
@@ -75,14 +104,19 @@ public class GameManager : MonoBehaviour
         state.isTimedTrial = false;
         state.doorIndex = 0;
         state.digEnabled = false;
+        state.pickupEnabled = false;
         state.paused = false;
         state.showCountdown = false;
         state.controlsFrozen = true;
         state.score = 0; // starting score
-        state.goldFoundLastTrial = 0; // how many gold items were found on the most recent trial
-        state.goldFoundTotal = 0; // how many gold items were found across all trials
-        state.goldSpawnedTotal = 0; // how many gold items were spawned across all trials
-        state.digsAttempted = 0; // how many times the player has dug for gold
+        state.itemsFoundLastTrial = 0; // how many gold items were found on the most recent trial
+        state.itemsFoundTotal = 0; // how many gold items were found across all trials
+        state.itemsSpawnedTotal = 0; // how many gold items were spawned across all trials
+        state.pickupsAttempted = 0; // how many times the player tried to pickup an item
+        state.digsAttempted = 0; // how many times the player has dug for an item
+
+        // Report version info
+        im.scriptedInput.ReportScriptedEvent("versions", new Dictionary<string, object> { {"taskVersion", TASK_VERSION} });
 
         gameEvents.Pause(false);
     }
@@ -129,8 +163,38 @@ public class GameManager : MonoBehaviour
     }
 
     public virtual Action RunIndexWrapper(Action todo) {
-        return () => {state.runIndex++;
-                      todo(); };
+        return () => { state.runIndex++;
+                       todo(); };
+    }
+
+    public Action ConditionalAction(bool condition, Action todo) {
+        if (condition)
+        {
+            return todo;
+        }
+        else
+        {
+            return () => {
+                state.runIndex++;
+                gameEvents.Do(new EventBase(Run));
+            };
+        }
+    }
+
+    public List<Action> ConditionalActions(bool condition, List<Action> todos)
+    {
+        if (condition)
+        {
+            return todos;
+        }
+        else // NOP
+        {
+            return new List<Action> {
+                () => {
+                    state.runIndex++;
+                    gameEvents.Do(new EventBase(Run));},
+            };
+        }
     }
 
     public void CollectReferences() {
@@ -149,11 +213,13 @@ public class GameManager : MonoBehaviour
         // Get quick access to other object functions
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         controlPlayer = player.GetComponent<ControlPlayer>();
-        spawnGold = spawner.GetComponent<SpawnItems>();
+        spawnItems = spawner.GetComponent<SpawnItems>();
         controlBase = mineBase.GetComponent<ControlBase>();
         controlMainCanvas = mainCanvas.GetComponent<ControlCanvas>();
-        digAudioSource = gameObject.GetComponent<AudioSource>();
+        pickupAudioSource = gameObject.GetComponents<AudioSource>()[0];
+        digAudioSource = gameObject.GetComponents<AudioSource>()[1];
         //baseReporter = mineBase.GetComponent<WorldDataReporter>();
+        controlTimeline = timelineCanvas.transform.Find("Timeline").GetComponent<ControlTimeline>();
     }
 
     // Actions that occur at the beginning of a trial
@@ -168,12 +234,12 @@ public class GameManager : MonoBehaviour
         controlMainCanvas.ResetCentralDisplay();
         
         // Recent trial-wise gold found count
-        state.goldFoundLastTrial = 0;
+        state.itemsFoundLastTrial = 0;
 
         gameEvents.Do(new EventBase(Run));
     }
    
-    // Execute the delay interval 
+    // Execute the pre-encoding delay message 
     protected void PreEncodingDelayMsg()
     {
         // Log
@@ -181,12 +247,43 @@ public class GameManager : MonoBehaviour
 
         // Update canvas display
         controlMainCanvas.ShowBackground(2f);
-        controlMainCanvas.SetCentralDisplay2("Get ready to\nsearch for gold", "default", 2f);
+        switch (itemType)
+        {
+            case ItemType.gold:
+                controlMainCanvas.SetCentralDisplay2("Get ready to\nsearch for gold", "default", 2f);
+                break;
+            case ItemType.gems:
+                controlMainCanvas.SetCentralDisplay2("Get ready to\nsearch for items", "default", 2f);
+                break;
+        }
+        
 
         gameEvents.DoIn(new EventBase(Run), 2000);
     }
 
-    // Execute the delay interval 
+    // Execute the pre-encoding message 
+    protected void PreTimelineMsg()
+    {
+        // Log
+        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "PreTimelineMsg" } });
+
+        // Update canvas display
+        controlMainCanvas.ShowBackground(2f);
+        switch (itemType)
+        {
+            case ItemType.gold:
+                controlMainCanvas.SetCentralDisplay2("Get ready to\nplace gold on timeline", "default", 2f);
+                break;
+            case ItemType.gems:
+                controlMainCanvas.SetCentralDisplay2("Get ready to\nplace items on timeline", "default", 2f);
+                break;
+        }
+        
+
+        gameEvents.DoIn(new EventBase(Run), 2000);
+    }
+
+    // Execute the pre-retrieval delay message
     protected void PreRetrievalDelayMsg()
     {
         // Log
@@ -200,7 +297,16 @@ public class GameManager : MonoBehaviour
 
         // Update canvas display
         controlMainCanvas.ShowBackground(2f);
-        controlMainCanvas.SetCentralDisplay2("Visualize a path\nto the gold", "default", 2f);
+        switch (itemType)
+        {
+            case ItemType.gold:
+                controlMainCanvas.SetCentralDisplay2("Visualize a path\nto the gold", "default", 2f);
+                break;
+            case ItemType.gems:
+                controlMainCanvas.SetCentralDisplay2("Visualize a path\nto the items", "default", 2f);
+                break;
+        }
+        
 
         gameEvents.DoIn(new EventBase(Run), 2000);
     }
@@ -237,6 +343,13 @@ public class GameManager : MonoBehaviour
 
         playerActive = true;
 
+        // Show the dig crosshair
+        if (pickupSystemEnabled)
+        {
+            state.pickupEnabled = true;
+            digCrosshair.SetActive(true);
+        }
+
         // Unfreeze the player
         controlPlayer.Freeze(false);
 
@@ -248,12 +361,39 @@ public class GameManager : MonoBehaviour
         iDoors[state.doorIndex] = true;
         controlBase.OpenDoors(iDoors, true, true);
 
-        // Spawn gold in the environment
-        spawnGold.Spawn(goldToFind);
+        // Spawn items in the environment
+        switch (itemType)
+        {
+            case ItemType.gold:
+                spawnItems.SpawnGold(itemsToFind);
+                break;
+            case ItemType.gems:
+                spawnItems.SpawnGems(itemsToFind);
+                break;
+        }
+
+        // Initialize the spawned items for pickup
+        if (pickupSystemEnabled)
+        {
+            foreach (var item in spawnItems.GetItems())
+            {
+                item.GetComponent<PickupItem>().InitPickup();
+            }
+        }
 
         // Update canvas displays
-        controlMainCanvas.SetTopDisplay("FIND " + goldToFind.ToString() + " GOLD", "default", 0.75f);
-        controlMainCanvas.SetTaskDirectionsDisplay("FIND " + goldToFind.ToString() + " GOLD");
+        string itemTypeStr = GetItemTypeStr();
+        if (pickupSystemEnabled)
+        {
+            controlMainCanvas.SetTopDisplay("PICK UP" + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("PICK UP " + itemTypeStr.ToUpper() + ": " + itemsToFind.ToString() + " LEFT");
+        }
+        else
+        {
+            controlMainCanvas.SetTopDisplay("FIND " + itemsToFind.ToString() + " " + itemTypeStr.ToUpper(), "default", 0.75f);
+            controlMainCanvas.SetTaskDirectionsDisplay("FIND " + itemsToFind.ToString() + " " + itemTypeStr.ToUpper());
+        }
+        
         if (state.isTimedTrial)
         {
             controlMainCanvas.SetTimedTrialDisplay("TIME PENALTY", "negative");
@@ -264,12 +404,119 @@ public class GameManager : MonoBehaviour
         //    controlMainCanvas.SetTimedTrialDisplay("NO TIME PENALTY", "positive");
         //}
 
+        // Display countdown
         state.timeLeft = taskDuration;
         state.showCountdown = true;
 
         gameEvents.DoIn(new EventBase(Run), taskDuration);
     }
-    
+
+    // Timeline
+    protected void Timeline()
+    {
+        // Log
+        im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "Timeline" } });
+
+        // Reset the player
+        FreezeAtBase();
+
+        // Show the timeline
+        timelineCanvas.SetActive(true);
+        // The following two lines are a hack because unity wasn't displaying the camera correctly
+        timelineCanvas.GetComponent<Canvas>().worldCamera.enabled = false;
+        timelineCanvas.GetComponent<Canvas>().worldCamera.enabled = true;
+
+        // Spawn the timeline items
+        switch (itemType)
+        {
+            case ItemType.gold:
+                controlTimeline.SpawnTimelineItems(spawnItems.goldObject, 8);
+                break;
+            case ItemType.gems:
+                controlTimeline.SpawnTimelineItems(spawnItems.gemObjects);
+                break;
+        }
+
+        // Unlock the mouse
+        im.LockCursor(CursorLockMode.None);
+
+        // Update canvas displays
+        string itemTypeStr = GetItemTypeStr();
+        controlMainCanvas.SetTaskDirectionsDisplay("PLACE " + itemTypeStr.ToUpper() + " ON TIMELINE");
+
+        // Display countdown
+        state.timeLeft = taskDuration;
+        state.showCountdown = true;
+
+        //gameEvents.DoIn(new EventBase(
+        //    () => {
+        //        TimelineEnd();
+        //        Run();
+        //    }),
+        //    timelineDuration);
+        gameEvents.DoIn(new EventBase(Run), timelineDuration);
+    }
+
+    protected void TimelineEnd()
+    {
+        var spawnedItems = spawnItems.GetItems();
+
+        // Report item times
+        var timelineItems = controlTimeline.GetItemTimes(timelineDuration / 1000);
+        im.scriptedInput.ReportScriptedEvent("timeline",
+            new Dictionary<string, object> { { "chosenTimelineItems", timelineItems } });
+        //Debug.Log(JsonConvert.SerializeObject(new Dictionary<string, object> { { "items", timelineItems } }));
+
+        // Update the score
+        
+        // TODO: JPB: (bug) Change this to handle more than gem objects
+        //                  There would be a bug in the gold version for points
+        // TODO: JPB: (feature) Add scoring for how close item is to actual time
+        //                      +5 on timeline, +1 to +5 for closeness, -2 not on timeline, -2 incorrect on timeline
+        // Note: make sure changes here happen in TutorialTimelineEnd too
+        int scoreDelta = 0;
+        foreach (var item in spawnItems.gemObjects)
+        {
+            bool isItemInTimeline = timelineItems.Any(x => (string)x["name"] == item.name);
+            bool isItemSpawnedAndPickedUp = spawnedItems.Any(x => (x.name == item.name) && x.GetComponent<PickupItem>().isPickedUp);
+            Debug.Log(item.name + " " + isItemInTimeline + " " + isItemSpawnedAndPickedUp);
+
+            if (isItemSpawnedAndPickedUp && isItemInTimeline)
+            {
+                // Item correctly placed on timeline
+                scoreDelta += correctTimelineReward;
+            }
+            else if (!isItemSpawnedAndPickedUp && isItemInTimeline)
+            {
+                // Item incorrectly placed on timeline
+                scoreDelta += wrongTimelinePenalty;
+            }
+            else if (isItemSpawnedAndPickedUp && !isItemInTimeline)
+            {
+                // Item not placed on timeline when it should be
+                scoreDelta += wrongTimelinePenalty;
+            }
+        }
+        UpdateScore(scoreDelta);
+
+        // Lock the mouse
+        im.LockCursor(CursorLockMode.Locked);
+
+        gameEvents.DoIn(new EventBase(
+            () => {
+                // Delete timeline items
+                foreach (var item in controlTimeline.GetTimelineItems())
+                {
+                    Destroy(item);
+                }
+
+                // Hide the timeline 
+                timelineCanvas.SetActive(false);
+                Run();
+            }),
+            timelineScoreDuration);
+    }
+
     // Execute the retrieval interval
     protected void Retrieval() {
         // Log
@@ -290,8 +537,9 @@ public class GameManager : MonoBehaviour
         controlBase.OpenDoors(iDoors, true, true);
 
         // Update canvas displays
-        controlMainCanvas.SetTopDisplay("DIG FOR GOLD", "default", 0.75f);
-        controlMainCanvas.SetTaskDirectionsDisplay("DIG FOR GOLD: " + goldToFind.ToString() + " LEFT");
+        string itemTypeStr = GetItemTypeStr();
+        controlMainCanvas.SetTopDisplay("DIG FOR " + itemTypeStr.ToUpper(), "default", 0.75f);
+        controlMainCanvas.SetTaskDirectionsDisplay("DIG FOR " + itemTypeStr.ToUpper() + ": " + itemsToFind.ToString() + " LEFT");
         
         if (state.isTimedTrial)
         {
@@ -314,7 +562,8 @@ public class GameManager : MonoBehaviour
         playerActive = true;
 
         // Find and hide gold pieces in the environment
-        spawnGold.HideItems();
+        spawnItems.HideItems();
+        state.pickupEnabled = false;
         state.digEnabled = false;
         digCrosshair.SetActive(false);
 
@@ -329,25 +578,25 @@ public class GameManager : MonoBehaviour
         }
         gameEvents.Do(new EventBase(Run));
     }
-    
+
     // Actions that occur at the end of a trial
     protected void EndOfTrial() {
         // Log
         im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "EndOfTrial" } });
 
         // Find and destroy gold pieces in the environment
-        spawnGold.DestroyItems();
-        
+        spawnItems.DestroyItems();
+
         // Update trial tracking info
         state.trialsCompleted++;
-        im.scriptedInput.ReportScriptedEvent("trialComplete", new Dictionary<string, object> {{ "trialsCompleted", state.trialsCompleted }});
+        im.scriptedInput.ReportScriptedEvent("trialComplete", new Dictionary<string, object> { { "trialsCompleted", state.trialsCompleted } });
         trialDisplay.text = "TRIAL " + (state.trialsCompleted + 1).ToString();
-        state.goldFoundTotal += state.goldFoundLastTrial;
-        state.goldSpawnedTotal += goldToFind;
-        
+        state.itemsFoundTotal += state.itemsFoundLastTrial;
+        state.itemsSpawnedTotal += itemsToFind;
+
         // Update performance tracker over the past 2 trials
         pastTrialPerformance[0] = pastTrialPerformance[1];
-        if (state.goldFoundLastTrial == goldToFind)
+        if (state.itemsFoundLastTrial == itemsToFind)
         {
             pastTrialPerformance[1] = true;
         }
@@ -357,13 +606,16 @@ public class GameManager : MonoBehaviour
         }
 
         // Decide how many items will be spawned on the next trial
-        if ((pastTrialPerformance[0]) & (pastTrialPerformance[1]))
+        if (scaleDifficultySystem)
         {
-            goldToFind++;
-        }
-        else if ((!pastTrialPerformance[0]) & (!pastTrialPerformance[1]) & (goldToFind > 1))
-        {
-            goldToFind--;
+            if ((pastTrialPerformance[0]) & (pastTrialPerformance[1]))
+            {
+                itemsToFind++;
+            }
+            else if ((!pastTrialPerformance[0]) & (!pastTrialPerformance[1]) & (itemsToFind > 1))
+            {
+                itemsToFind--;
+            }
         }
         
         gameEvents.Do(new EventBase(Run));
@@ -418,17 +670,100 @@ public class GameManager : MonoBehaviour
             im.RegisterKeyHandler(PressSpace);
         }
     }
-    
-    // Perform a dig action (during retrieval period only)
-    public void DigForGold() {
-        if(!state.digEnabled) {
+
+    // Perform a pickup action (during encoding period only)
+    public void PickupItem() {
+        if (!state.pickupEnabled || !pickupSystemEnabled)
+        {
             return;
         }
 
-        float minDistance = 1000.0f;
-        float distance;
-        int goldLeft;
-        Transform nearestGoldTransform;
+        float minDistance = float.MaxValue;
+
+        // Register a dig
+        state.pickupsAttempted++;
+
+        // Play the dig sound
+        // TODO: JPB: (feature) Change pickupAudio Source in unity GameManager
+        if (pickupAudioSource)
+        {
+            pickupAudioSource.Play();
+        }
+
+        // Find closest item in the environment
+        var items = spawnItems.GetVisibleItems();
+        foreach (var item in items)
+        {
+            float distance = ControlPlayer.EuclideanDistance(digCrosshair.transform, item.transform);
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                minDistanceItem = item;
+            }
+        }
+
+        // Add or subtract points depending on whether dig was successful
+        if (minDistance <= maxDigDistance)
+        {
+            im.scriptedInput.ReportScriptedEvent("pickup", new Dictionary<string, object> {{"successful", true},
+                                                                                           {"distanceFromNearestItem", minDistance},
+                                                                                           {"nearestItemPositionX", minDistanceItem.transform.position.x},
+                                                                                           {"nearestItemPositionZ", minDistanceItem.transform.position.z},
+                                                                                           {"nearestItemName", minDistanceItem.name}});
+            state.itemsFoundLastTrial++;
+            controlMainCanvas.SetTaskDirectionsDisplay("PICK UP " + GetItemTypeStr().ToUpper() + ": " + (items.Length - 1).ToString() + " LEFT");
+
+            // TODO: JPB: (refactor) Combine spawnItems and Pickup systems?
+            minDistanceItem.GetComponent<PickupItem>().Pickup();
+            spawnItems.HideItem(minDistanceItem);
+        }
+        else if (minDistance == float.MaxValue) // i.e. all items have been dug
+        {
+            im.scriptedInput.ReportScriptedEvent("pickup", new Dictionary<string, object> {{"successful", false},
+                                                                                           {"distanceFromNearestItem", -1}, // these -1s are for finding instances but should be removed from analysis
+                                                                                           {"nearestItemPositionX", -1},
+                                                                                           {"nearestItemPositionZ", -1},
+                                                                                           {"nearestItemName", -1}});
+            if (itemNotFoundEffect)
+            {
+                Vector3 spawnPosition = gameObject.transform.position + new Vector3(0f, -1.18f, 0f);
+                Instantiate(itemNotFoundEffect, playerAnimationSpawnPoint.transform.position, Quaternion.identity); // +new Vector3(0f, -1.18f, 1f)
+            }
+        }
+        else
+        {
+            im.scriptedInput.ReportScriptedEvent("pickup", new Dictionary<string, object> {{"successful", false},
+                                                                                           {"distanceFromNearestItem", minDistance},
+                                                                                           {"nearestItemPositionX", minDistanceItem.transform.position.x},
+                                                                                           {"nearestItemPositionZ", minDistanceItem.transform.position.z},
+                                                                                           {"nearestItemName", minDistanceItem.name}});
+            if (itemNotFoundEffect)
+            {
+                Vector3 spawnPosition = gameObject.transform.position + new Vector3(0f, -1.18f, 0f);
+                Instantiate(itemNotFoundEffect, playerAnimationSpawnPoint.transform.position, Quaternion.identity); // +new Vector3(0f, -1.18f, 1f)
+            }
+        }
+    }
+
+    // Perform a dig action (during retrieval period only)
+    public void DigForItem() {
+        if (!state.digEnabled)
+        {
+            return;
+        }
+
+        int itemFoundReward = 0;
+        switch (itemType)
+        {
+            case ItemType.gold:
+                itemFoundReward = goldFoundReward;
+                break;
+            case ItemType.gems:
+                itemFoundReward = gemFoundReward;
+                break;
+        }
+
+        float minDistance = float.MaxValue;
 
         // Register a dig
         state.digsAttempted++;
@@ -438,63 +773,68 @@ public class GameManager : MonoBehaviour
         {
             digAudioSource.Play();
         }
-        
-        // Find and hide gold pieces in the environment
-        golds = GameObject.FindGameObjectsWithTag("Pickups");
-        goldLeft = golds.Length;
-        for (int iGold = 0; iGold < golds.Length; iGold++)
+
+        // Find closest item in the environment
+        var items = spawnItems.GetItems();
+        foreach (var item in items)
         {
-            Transform goldTransform = golds[iGold].transform;
-            distance = ControlPlayer.EuclideanDistance(digCrosshair.transform, goldTransform);
+            // Don't allow digging of items that weren't picked up
+            if (pickupSystemEnabled && !item.GetComponent<PickupItem>().isPickedUp)
+            {
+                continue;
+            }
+
+            float distance = ControlPlayer.EuclideanDistance(digCrosshair.transform, item.transform);
             if (distance < minDistance)
             {
                 minDistance = distance;
-                minDistanceGold = golds[iGold];
-                nearestGoldTransform = goldTransform;
+                minDistanceItem = item;
             }
         }
 
         // Add or subtract points depending on whether dig was successful
         if (minDistance <= maxDigDistance)
         {
-            UpdateScore(goldFoundReward);
-            im.scriptedInput.ReportScriptedEvent("dig", new Dictionary<string, object> {{"successful", true}, 
-                                                                                        {"distanceFromNearestGold", minDistance}, 
-                                                                                        {"nearestGoldPositionX", minDistanceGold.transform.position.x}, 
-                                                                                        {"nearestGoldPositionZ", minDistanceGold.transform.position.z}});
-            goldLeft--;
-            state.goldFoundLastTrial++;
-            controlMainCanvas.SetTaskDirectionsDisplay("DIG FOR GOLD: " + goldLeft.ToString() + " LEFT");
-            if (goldFoundEffect)
+            UpdateScore(itemFoundReward);
+            im.scriptedInput.ReportScriptedEvent("dig", new Dictionary<string, object> {{"successful", true},
+                                                                                        {"distanceFromNearestItem", minDistance},
+                                                                                        {"nearestItemPositionX", minDistanceItem.transform.position.x},
+                                                                                        {"nearestItemPositionZ", minDistanceItem.transform.position.z},
+                                                                                        {"nearestItemName", minDistanceItem.name}});
+            state.itemsFoundLastTrial++;
+            controlMainCanvas.SetTaskDirectionsDisplay("DIG FOR " + GetItemTypeStr().ToUpper() + ": " + (items.Length - 1).ToString() + " LEFT");
+            if (itemFoundEffect)
             {
-                Instantiate(goldFoundEffect, minDistanceGold.transform.position, Quaternion.identity);
+                Instantiate(itemFoundEffect, minDistanceItem.transform.position, Quaternion.identity);
             }
-            Destroy(minDistanceGold);
+            Destroy(minDistanceItem);
         }
-        else if (minDistance == 1000.0f) // i.e. all gold has been dug
+        else if (minDistance == float.MaxValue) // i.e. all items have been dug
         {
             UpdateScore(wrongDigPenalty);
             im.scriptedInput.ReportScriptedEvent("dig", new Dictionary<string, object> {{"successful", false},
-                                                                                        {"distanceFromNearestGold", -1}, // these -1s are for finding instances but should be removed from analysis
-                                                                                        {"nearestGoldPositionX", -1},
-                                                                                        {"nearestGoldPositionZ", -1}});
-            if (goldNotFoundEffect)
+                                                                                        {"distanceFromNearestItem", -1}, // these -1s are for finding instances but should be removed from analysis
+                                                                                        {"nearestItemPositionX", -1},
+                                                                                        {"nearestItemPositionZ", -1},
+                                                                                        {"nearestItemName", -1}});
+            if (itemNotFoundEffect)
             {
                 Vector3 spawnPosition = gameObject.transform.position + new Vector3(0f, -1.18f, 0f);
-                Instantiate(goldNotFoundEffect, playerAnimationSpawnPoint.transform.position, Quaternion.identity); // +new Vector3(0f, -1.18f, 1f)
+                Instantiate(itemNotFoundEffect, playerAnimationSpawnPoint.transform.position, Quaternion.identity); // +new Vector3(0f, -1.18f, 1f)
             }
         }
         else
         {
             UpdateScore(wrongDigPenalty);
             im.scriptedInput.ReportScriptedEvent("dig", new Dictionary<string, object> {{"successful", false},
-                                                                                        {"distanceFromNearestGold", minDistance},
-                                                                                        {"nearestGoldPositionX", minDistanceGold.transform.position.x},
-                                                                                        {"nearestGoldPositionZ", minDistanceGold.transform.position.z}});
-            if (goldNotFoundEffect)
+                                                                                        {"distanceFromNearestItem", minDistance},
+                                                                                        {"nearestItemPositionX", minDistanceItem.transform.position.x},
+                                                                                        {"nearestItemPositionZ", minDistanceItem.transform.position.z},
+                                                                                        {"nearestItemName", minDistanceItem.name}});
+            if (itemNotFoundEffect)
             {
                 Vector3 spawnPosition = gameObject.transform.position + new Vector3(0f, -1.18f, 0f);
-                Instantiate(goldNotFoundEffect, playerAnimationSpawnPoint.transform.position, Quaternion.identity); // +new Vector3(0f, -1.18f, 1f)
+                Instantiate(itemNotFoundEffect, playerAnimationSpawnPoint.transform.position, Quaternion.identity); // +new Vector3(0f, -1.18f, 1f)
             }
         }
     }
@@ -519,6 +859,45 @@ public class GameManager : MonoBehaviour
             {
                 AudioSource.PlayClipAtPoint(pointLossSFX, player.transform.position, 0.15f);
             }
+        }
+    }
+}
+
+public static class IListExtensions
+{
+
+    /// <summary>
+    /// Knuth (Fisher-Yates) Shuffle
+    /// Shuffles the element order of the specified list.
+    /// </summary>
+    public static IList<T> Shuffle<T>(this IList<T> list, System.Random rng)
+    {
+        var count = list.Count;
+        for (int i = 0; i < count; ++i)
+        {
+            int r = rng.Next(i, count);
+            T tmp = list[i];
+            list[i] = list[r];
+            list[r] = tmp;
+        }
+        return list;
+    }
+}
+
+public static class CollectionExtensions
+{
+    /// <summary>
+    /// Allows List constructor to take a items or a list of items that gets expanded
+    /// https://stackoverflow.com/a/63374611
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="collection"></param>
+    /// <param name="itemsToAdd"></param>
+    public static void Add<T>(this ICollection<T> collection, IEnumerable<T> itemsToAdd)
+    {
+        foreach (var item in itemsToAdd)
+        {
+            collection.Add(item);
         }
     }
 }

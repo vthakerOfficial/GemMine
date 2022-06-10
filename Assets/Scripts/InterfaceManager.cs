@@ -147,19 +147,6 @@ public class InterfaceManager : MonoBehaviour {
             default:
                 break; // could add error checking here
         }
-        //switch ((string)GetSetting("syncBox"))
-        //{
-        //    case "none":
-        //        break;
-        //    case "ucla":
-        //        break; // add ucla synching later!
-        //    case "cml":
-        //        syncBox = new NonUnitySyncbox(this);
-        //        syncBox.Init();
-        //        break;
-        //    default:
-        //        break; // could add error checking here
-        //}
 
         // Start experiment Launcher scene
         mainEvents.Do(new EventBase(LaunchLauncher));
@@ -250,7 +237,8 @@ public class InterfaceManager : MonoBehaviour {
 
     public void TestSyncbox(Action callback) {
         syncBox.Do(new EventBase(syncBox.StartPulse));
-        // DoIn(new EventBase(syncBox.StopPulse), (int)GetSetting("syncBoxTestLength"));
+        // TODO: JPB: (feature) Add this back in
+        //DoIn(new EventBase(syncBox.StopPulse), (int)GetSetting("syncBoxTestLength"));
         DoIn(new EventBase(syncBox.StopPulse), 5000); 
         DoIn(new EventBase(callback), 5000); 
     }
@@ -301,8 +289,9 @@ public class InterfaceManager : MonoBehaviour {
             }
 
             // won't execute until mgr is ready
-            // Do(new EventBase(LogExperimentInfo));
+            //Do(new EventBase(LogExperimentInfo));
 
+            // TODO: JPB: (bug) put experiment version here
         }
         else {
             throw new Exception("No experiment configuration loaded");
