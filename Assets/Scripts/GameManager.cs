@@ -118,10 +118,12 @@ public class GameManager : MonoBehaviour
         // Report experiment info
         string experimentName = "";
         if (timelineSystemEnabled) { experimentName += "Timeline"; }
+        experimentName += "Goldmine";
+        experimentName += "ReadOnly";
         im.scriptedInput.ReportScriptedEvent("experimentInfo", new Dictionary<string, object> {
             {"experimentName", experimentName},
             {"experimentVersion", EXPERIMENT_VERSION},
-            {"unityVersion", Application.version}
+            {"unityVersion", Application.unityVersion}
         });
 
         gameEvents.Pause(false);
