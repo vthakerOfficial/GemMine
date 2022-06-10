@@ -11,7 +11,7 @@ using System.Threading;
 public class GameManager : MonoBehaviour
 {
     // Version number
-    const string TASK_VERSION = "Goldmine-2.0.0";
+    const string EXPERIMENT_VERSION = "2.0.1";
 
     // Singleton Boilerplate
     public static GameManager gm;
@@ -115,8 +115,14 @@ public class GameManager : MonoBehaviour
         state.pickupsAttempted = 0; // how many times the player tried to pickup an item
         state.digsAttempted = 0; // how many times the player has dug for an item
 
-        // Report version info
-        im.scriptedInput.ReportScriptedEvent("versions", new Dictionary<string, object> { {"taskVersion", TASK_VERSION} });
+        // Report experiment info
+        string experimentName = "";
+        if (timelineSystemEnabled) { experimentName += "Timeline"; }
+        im.scriptedInput.ReportScriptedEvent("experimentInfo", new Dictionary<string, object> {
+            {"experimentName", experimentName},
+            {"experimentVersion", EXPERIMENT_VERSION},
+            {"unityVersion", Application.version}
+        });
 
         gameEvents.Pause(false);
     }
@@ -468,14 +474,24 @@ public class GameManager : MonoBehaviour
         //Debug.Log(JsonConvert.SerializeObject(new Dictionary<string, object> { { "items", timelineItems } }));
 
         // Update the score
-        
-        // TODO: JPB: (bug) Change this to handle more than gem objects
-        //                  There would be a bug in the gold version for points
+        // TODO: JPB: (bug) There is a bug in the gold only timeline for points
         // TODO: JPB: (feature) Add scoring for how close item is to actual time
         //                      +5 on timeline, +1 to +5 for closeness, -2 not on timeline, -2 incorrect on timeline
         // Note: make sure changes here happen in TutorialTimelineEnd too
         int scoreDelta = 0;
-        foreach (var item in spawnItems.gemObjects)
+        var spawnableItems = new GameObject[0];
+
+        switch (itemType)
+        {
+            case ItemType.gold:
+                spawnableItems = Enumerable.Repeat(spawnItems.goldObject, 3).ToArray();
+                break;
+            case ItemType.gems:
+                spawnableItems = spawnItems.gemObjects;
+                break;
+        }
+
+        foreach (var item in spawnableItems)
         {
             bool isItemInTimeline = timelineItems.Any(x => (string)x["name"] == item.name);
             bool isItemSpawnedAndPickedUp = spawnedItems.Any(x => (x.name == item.name) && x.GetComponent<PickupItem>().isPickedUp);
@@ -712,8 +728,6 @@ public class GameManager : MonoBehaviour
                                                                                            {"nearestItemName", minDistanceItem.name}});
             state.itemsFoundLastTrial++;
             controlMainCanvas.SetTaskDirectionsDisplay("PICK UP " + GetItemTypeStr().ToUpper() + ": " + (items.Length - 1).ToString() + " LEFT");
-
-            // TODO: JPB: (refactor) Combine spawnItems and Pickup systems?
             minDistanceItem.GetComponent<PickupItem>().Pickup();
             spawnItems.HideItem(minDistanceItem);
         }
