@@ -467,7 +467,7 @@ public class FileManager {
 
     public string ExperimentPath() {
         string root = ExperimentRoot();
-        string dir = System.IO.Path.Combine(root, (string)manager.GetSetting("experimentName"));
+        string dir = System.IO.Path.Combine(root, "data", (string)manager.GetSetting("experimentName"));
         return dir;
     }
     public string ParticipantPath(string participant) {
