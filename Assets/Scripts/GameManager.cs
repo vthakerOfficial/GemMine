@@ -11,7 +11,7 @@ using System.Threading;
 public class GameManager : MonoBehaviour
 {
     // Version number
-    const string EXPERIMENT_VERSION = "2.0.2";
+    const string EXPERIMENT_VERSION = "2.0.3";
 
     // Singleton Boilerplate
     public static GameManager gm;

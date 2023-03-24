@@ -500,7 +500,7 @@ public class FileManager {
             return null;
         }
         string dir = ParticipantPath();
-        dir = System.IO.Path.Combine(dir, session.ToString());
+        dir = System.IO.Path.Combine(dir, "session_" + session.ToString());
         return dir;
     }
 
