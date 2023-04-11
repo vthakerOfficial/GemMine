@@ -490,7 +490,7 @@ public class FileManager {
     
     public string SessionPath(string participant, int session) {
         string dir = ParticipantPath(participant);
-        dir = System.IO.Path.Combine(dir, session.ToString());
+        dir = System.IO.Path.Combine(dir, "session_" + session.ToString());
         return dir;
     }
 

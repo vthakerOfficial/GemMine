@@ -541,6 +541,9 @@ class PracticeGameManager : GameManager {
         // Reset the player
         FreezeAtBase();
 
+        // Set scale of timeline
+        controlTimeline.scale = GameManager.taskDuration / 1000f;
+
         // Show the timeline
         timelineCanvas.SetActive(true);
         // The following two lines are a hack because unity wasn't displaying the camera correctly
@@ -565,7 +568,7 @@ class PracticeGameManager : GameManager {
     protected void TutorialTimelineEnd()
     {
         // Report item times
-        var timelineItems = timelineCanvas.transform.Find("Timeline").GetComponent<ControlTimeline>().GetItemTimes(timelineDuration / 1000);
+        var timelineItems = timelineCanvas.transform.Find("Timeline").GetComponent<ControlTimeline>().GetItemTimes();
         im.scriptedInput.ReportScriptedEvent("timeline", new Dictionary<string, object> { { "items", timelineItems } });
         //Debug.Log(JsonConvert.SerializeObject(new Dictionary<string, object> { { "items", timelineItems } }));
 

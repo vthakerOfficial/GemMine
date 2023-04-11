@@ -1,5 +1,6 @@
 {
     "syncBox": "ucla",
+    "nativePlugin": false,
     "isLegacyExperiment": false,
     "launcherScene": "StartupScene_",
     "eventsPerFrame": 5,

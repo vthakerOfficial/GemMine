@@ -31,20 +31,23 @@ public class GameManager : MonoBehaviour
     public AudioClip pointLossSFX; // sound that plays when points are subtracted
 
     // TODO: move to config file?
+    public const int delayDuration = 10000; // duration of the delay phases
+    public const int timelineDuration = 18000; // duration of the timeline phase
+    public const int timelineScoreDuration = 2000; // duration of the timeline score display
+    public const int taskDuration = 30000; // duration of the task phases (encoding, retrieval)
+    public const int returnToBasePenalty = -5; // penalty for not eturning to the base in time
+    public const int wrongDigPenalty = -2; // penalty for digging in the wrong place
+    public const int goldFoundReward = 10; // points for each gold piece found
+    public const int gemFoundReward = 10; // points for each gem found
+    public const int correctTimelineReward = 10; // points for each item correctly placed on timeline
+    public const int wrongTimelinePenalty = -2; // penalty for each item incorrectly placed on timeline or items not placed on timeline when they should be
+    public const float maxDigDistance = 4f; // max distance player can dig from items to get points
+    public const int eventsPerFrame = 5;
+
+    // Changing gloabs
     public int itemsToFind = 4; // how many items are placed in the environment
-    public int delayDuration = 10000; // duration of the delay phases
-    public int timelineDuration = 18000; // duration of the timeline phase
-    public int timelineScoreDuration = 2000; // duration of the timeline score display
-    public int taskDuration = 30000; // duration of the task phases (encoding, retrieval)
-    public int returnToBasePenalty = -5; // penalty for not eturning to the base in time
-    public int wrongDigPenalty = -2; // penalty for digging in the wrong place
-    public int goldFoundReward = 10; // points for each gold piece found
-    public int gemFoundReward = 10; // points for each gem found
-    public int correctTimelineReward = 10; // points for each item correctly placed on timeline
-    public int wrongTimelinePenalty = -2; // penalty for each item incorrectly placed on timeline or items not placed on timeline when they should be
-    public float maxDigDistance = 4f; // max distance player can dig from items to get points
-    public int eventsPerFrame = 5;
     public bool playerActive = false; // whether the player is in an active task state or not
+
     // HUD text displays
     public Text timerDisplay; // text that says how much time is left in the current game phase
     public Text trialDisplay; // text that says how many trials have elapsed
@@ -428,6 +431,9 @@ public class GameManager : MonoBehaviour
         // Reset the player
         FreezeAtBase();
 
+        // Set scale of timeline
+        controlTimeline.scale = GameManager.taskDuration / 1000f;
+
         // Show the timeline
         timelineCanvas.SetActive(true);
         // The following two lines are a hack because unity wasn't displaying the camera correctly
@@ -470,7 +476,7 @@ public class GameManager : MonoBehaviour
         var spawnedItems = spawnItems.GetItems();
 
         // Report item times
-        var timelineItems = controlTimeline.GetItemTimes(timelineDuration / 1000);
+        var timelineItems = controlTimeline.GetItemTimes();
         im.scriptedInput.ReportScriptedEvent("timeline",
             new Dictionary<string, object> { { "chosenTimelineItems", timelineItems } });
         //Debug.Log(JsonConvert.SerializeObject(new Dictionary<string, object> { { "items", timelineItems } }));

@@ -10,6 +10,7 @@ public class ControlTimeline : MonoBehaviour
     protected float xMax;
     protected List<GameObject> itemsOnTimeline = new List<GameObject>();
     private System.Random rng = new System.Random();
+    public float scale = 1;
 
     void Start()
     {
@@ -44,9 +45,22 @@ public class ControlTimeline : MonoBehaviour
         }
     }
 
+    public float GetItemTime(Transform item)
+    {
+        if (item.position.y == transform.position.y)
+        {
+            float width = xMax - xMin;
+            return (item.position.x - xMin) / width * scale;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
     // By default, this returns a normalized value (between 0 and 1)
     // TODO: JPB: (feature) Add actualTime (store when each item is found)
-    public List<Dictionary<string, object>> GetItemTimes(float scale = 1)
+    public List<Dictionary<string, object>> GetItemTimes()
     {
         var items = new List<Dictionary<string, object>>();
         foreach (var item in itemsOnTimeline.ToList()) // use ToList to make a copy for safe removing
@@ -56,7 +70,7 @@ public class ControlTimeline : MonoBehaviour
                 itemsOnTimeline.Remove(item);
                 continue;
             }
-            float itemTime = GetItemTimeNormalized(item.transform) * scale;
+            float itemTime = GetItemTime(item.transform);
             items.Add(new Dictionary<string, object> { { "name", item.name }, { "chosenTime", itemTime }, { "actualTime", 0 } });
         }
 

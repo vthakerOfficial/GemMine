@@ -12,10 +12,18 @@ public class DragDrop : MonoBehaviour
     protected Vector3 lastMousePos;
     protected CanvasGroup canvasGroup;
     protected Collider collidedItem = null;
+    protected InterfaceManager im;
+    protected ControlTimeline controlTimeline;
 
     void Awake()
     {
         canvasGroup = GetComponent<CanvasGroup>();
+
+        GameObject mgr = GameObject.Find("InterfaceManager");
+        im = (InterfaceManager)mgr?.GetComponent("InterfaceManager");
+
+        GameObject timelineCanvas = GameObject.Find("TimelineCanvas");
+        controlTimeline = timelineCanvas.GetComponentInChildren<ControlTimeline>();
     }
 
     void Start()
@@ -50,6 +58,9 @@ public class DragDrop : MonoBehaviour
         {
             transform.position = originalPos;
         }
+        im.scriptedInput.ReportScriptedEvent("timelineItemMoved", new Dictionary<string, object> {
+            { "name", transform.name },
+            { "chosenTime", controlTimeline.GetItemTime(transform) } });
     }
 
     private void OnTriggerEnter(Collider other)
