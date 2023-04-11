@@ -696,10 +696,6 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 652827575}
     m_Modifications:
-    - target: {fileID: 100000, guid: 27bfdb9a40efac94b969eaf77cea92d9, type: 3}
-      propertyPath: m_Name
-      value: Rock5A (2)
-      objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 27bfdb9a40efac94b969eaf77cea92d9, type: 3}
       propertyPath: m_LocalPosition.x
       value: -4.6562977
@@ -743,6 +739,10 @@ PrefabInstance:
     - target: {fileID: 400000, guid: 27bfdb9a40efac94b969eaf77cea92d9, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 3.601
+      objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: 27bfdb9a40efac94b969eaf77cea92d9, type: 3}
+      propertyPath: m_Name
+      value: Rock5A (2)
       objectReference: {fileID: 0}
     - target: {fileID: 6400000, guid: 27bfdb9a40efac94b969eaf77cea92d9, type: 3}
       propertyPath: m_Enabled
@@ -3004,17 +3004,6 @@ MonoBehaviour:
   pointGainSFX: {fileID: 8300000, guid: 10b752f2fe16a4eac83061676b260a7a, type: 3}
   pointLossSFX: {fileID: 8300000, guid: 63c6ae6da94f84e358485479f8d799ea, type: 3}
   itemsToFind: 4
-  delayDuration: 10000
-  timelineDuration: 18000
-  taskDuration: 30000
-  returnToBasePenalty: -5
-  wrongDigPenalty: -2
-  goldFoundReward: 10
-  gemFoundReward: 10
-  correctTimelineReward: 10
-  wrongTimelinePenalty: -2
-  maxDigDistance: 3
-  eventsPerFrame: 5
   playerActive: 0
   timerDisplay: {fileID: 964238830}
   trialDisplay: {fileID: 1096070657}
@@ -6912,8 +6901,8 @@ BoxCollider:
   m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 1.3119191, y: 3.4098377, z: 1.399765}
-  m_Center: {x: -0.09268069, y: -0.41089916, z: 0.0020565512}
+  m_Size: {x: 1.5755647, y: 3.3465862, z: 1.8029913}
+  m_Center: {x: -0.22450352, y: -0.4425249, z: 0.0009210587}
 --- !u!114 &1341139551
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8378,6 +8367,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 513d3a655b74b419bbf2af7ff9daf160, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  scale: 1
 --- !u!114 &1634282491
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8785,10 +8775,6 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 180853237}
     m_Modifications:
-    - target: {fileID: 100000, guid: 27bfdb9a40efac94b969eaf77cea92d9, type: 3}
-      propertyPath: m_Name
-      value: Rock5A (2)
-      objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 27bfdb9a40efac94b969eaf77cea92d9, type: 3}
       propertyPath: m_LocalPosition.x
       value: -4.6562977
@@ -8832,6 +8818,10 @@ PrefabInstance:
     - target: {fileID: 400000, guid: 27bfdb9a40efac94b969eaf77cea92d9, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 3.601
+      objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: 27bfdb9a40efac94b969eaf77cea92d9, type: 3}
+      propertyPath: m_Name
+      value: Rock5A (2)
       objectReference: {fileID: 0}
     - target: {fileID: 6400000, guid: 27bfdb9a40efac94b969eaf77cea92d9, type: 3}
       propertyPath: m_Enabled
