@@ -35,7 +35,7 @@ public class UPennSyncbox : NonUnitySyncbox
 		if(!stopped)
         {
             // Send a pulse
-            Debug.Log("Pew!");
+            //Debug.Log("Pew!");
             im.scriptedInput.ReportOutOfThreadScriptedEvent("syncPulse", new System.Collections.Generic.Dictionary<string, object>());
             SyncPulse();
 

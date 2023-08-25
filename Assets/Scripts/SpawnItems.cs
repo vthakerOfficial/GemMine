@@ -1,7 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.Networking;
 
 public class SpawnItems : MonoBehaviour
 {
@@ -11,6 +14,7 @@ public class SpawnItems : MonoBehaviour
     public float zMaxRange = 31.5f;
     public GameObject goldObject; // prefab to spawn
     public GameObject[] gemObjects; // prefabs to spawn
+    public GameObject[] pictureObjects;
     protected InterfaceManager im;
     private GameObject[] items;
     private int numItemsSpawned = 0;
@@ -22,6 +26,34 @@ public class SpawnItems : MonoBehaviour
         if (mgr)
         {
             im = (InterfaceManager)mgr.GetComponent("InterfaceManager");
+        }
+    }
+
+    public IEnumerator Start()
+    {
+        for (int i=0; i<pictureObjects.Length; ++i)
+        {
+            string name = "picture" + i + ".jpeg";
+            string path = Path.Combine(im.fileManager.ConfigPath(), name);
+            Debug.Log(path);
+
+            using (UnityWebRequest uwr = UnityWebRequestTexture.GetTexture("file://"+path))
+            {
+                yield return uwr.SendWebRequest();
+
+                if (uwr.isNetworkError || uwr.isHttpError)
+                {
+                    Debug.Log(uwr.error);
+                }
+                else
+                {
+                    File.Copy(path, Path.Combine(im.fileManager.SessionPath(), name));
+
+                    Texture2D texture = DownloadHandlerTexture.GetContent(uwr);
+                    Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+                    pictureObjects[i].GetComponent<Image>().sprite = sprite;
+                }
+            }
         }
     }
 
@@ -47,6 +79,25 @@ public class SpawnItems : MonoBehaviour
         for (int i = 0; i < nItems; i++)
         {
             SpawnItem(gemObjects[indices[i]], 2);
+        }
+    }
+
+    public void SpawnPictures(int nItems)
+    {
+        if (nItems > pictureObjects.Length)
+        {
+            im.Do(new EventBase<string, int>(im.ShowWarning, "The game is trying to spawn more items than there are pictures. Please quit the game.", 5000));
+        }
+
+        Debug.Log(im);
+        Debug.Log(im.scriptedInput);
+
+        im.scriptedInput.ReportScriptedEvent("picturesSpawned", new Dictionary<string, object> { { "nItems", nItems } });
+        var indices = Enumerable.Range(0, pictureObjects.Length).ToList();
+        indices.Shuffle(rng);
+        for (int i = 0; i < nItems; i++)
+        {
+            SpawnItem(pictureObjects[indices[i]], 2);
         }
     }
 
@@ -101,6 +152,11 @@ public class SpawnItems : MonoBehaviour
     public void HideItem(GameObject item)
     {
         item.GetComponentInChildren<Renderer>().enabled = false;
+        var canvas = item.GetComponentInChildren<Canvas>();
+        if (canvas != null)
+        {
+            canvas.enabled = false;
+        }
     }
 
     public void HideItems()
@@ -115,6 +171,11 @@ public class SpawnItems : MonoBehaviour
     public void UnhideItem(GameObject item)
     {
         item.GetComponentInChildren<Renderer>().enabled = true;
+        var canvas = item.GetComponentInChildren<Canvas>();
+        if (canvas != null)
+        {
+            canvas.enabled = true;
+        }
     }
 
     public void UnhideItems()

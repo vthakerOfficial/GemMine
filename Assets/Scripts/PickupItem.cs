@@ -19,6 +19,10 @@ public class PickupItem : MonoBehaviour
             float yRot = RPM * 6f * Time.deltaTime;
             transform.Rotate(0, yRot, 0, Space.World);
         }
+        if (transform.name.Contains("picture"))
+        {
+
+        }
     }
 
     public void InitPickup()

@@ -39,6 +39,7 @@ public class GameManager : MonoBehaviour
     public const int wrongDigPenalty = -2; // penalty for digging in the wrong place
     public const int goldFoundReward = 10; // points for each gold piece found
     public const int gemFoundReward = 10; // points for each gem found
+    public const int pictureFoundReward = 10; // points for each picture found
     public const int correctTimelineReward = 10; // points for each item correctly placed on timeline
     public const int wrongTimelinePenalty = -2; // penalty for each item incorrectly placed on timeline or items not placed on timeline when they should be
     public const float maxDigDistance = 4f; // max distance player can dig from items to get points
@@ -78,9 +79,10 @@ public class GameManager : MonoBehaviour
 
     public enum ItemType {
         gold,
-        gems
+        gems,
+        pictures
     }
-    protected ItemType itemType = ItemType.gems;
+    protected ItemType itemType = ItemType.pictures;
     public string GetItemTypeStr() { return itemType == ItemType.gold ? "gold" : "items"; }
     //public string GetItemTypeStr() { return Enum.GetName(itemType.GetType(), itemType); }
 
@@ -94,6 +96,12 @@ public class GameManager : MonoBehaviour
     {
         // get references to game objects for access by this and other objects
         CollectReferences();
+        GetPictures();
+    }
+
+    protected void GetPictures()
+    {
+        //var picturesNames = im.GetSetting("");
     }
 
     protected virtual void Start() {
@@ -263,7 +271,7 @@ public class GameManager : MonoBehaviour
             case ItemType.gold:
                 controlMainCanvas.SetCentralDisplay2("Get ready to\nsearch for gold", "default", 2f);
                 break;
-            case ItemType.gems:
+            default:
                 controlMainCanvas.SetCentralDisplay2("Get ready to\nsearch for items", "default", 2f);
                 break;
         }
@@ -285,7 +293,7 @@ public class GameManager : MonoBehaviour
             case ItemType.gold:
                 controlMainCanvas.SetCentralDisplay2("Get ready to\nplace gold on timeline", "default", 2f);
                 break;
-            case ItemType.gems:
+            default:
                 controlMainCanvas.SetCentralDisplay2("Get ready to\nplace items on timeline", "default", 2f);
                 break;
         }
@@ -313,7 +321,7 @@ public class GameManager : MonoBehaviour
             case ItemType.gold:
                 controlMainCanvas.SetCentralDisplay2("Visualize a path\nto the gold", "default", 2f);
                 break;
-            case ItemType.gems:
+            default:
                 controlMainCanvas.SetCentralDisplay2("Visualize a path\nto the items", "default", 2f);
                 break;
         }
@@ -380,6 +388,9 @@ public class GameManager : MonoBehaviour
                 break;
             case ItemType.gems:
                 spawnItems.SpawnGems(itemsToFind);
+                break;
+            case ItemType.pictures:
+                spawnItems.SpawnPictures(itemsToFind);
                 break;
         }
 
@@ -449,6 +460,9 @@ public class GameManager : MonoBehaviour
             case ItemType.gems:
                 controlTimeline.SpawnTimelineItems(spawnItems.gemObjects);
                 break;
+            case ItemType.pictures:
+                controlTimeline.SpawnTimelineItems(spawnItems.pictureObjects);
+                break;
         }
 
         // Unlock the mouse
@@ -496,6 +510,9 @@ public class GameManager : MonoBehaviour
                 break;
             case ItemType.gems:
                 spawnableItems = spawnItems.gemObjects;
+                break;
+            case ItemType.pictures:
+                spawnableItems = spawnItems.pictureObjects;
                 break;
         }
 
@@ -719,6 +736,7 @@ public class GameManager : MonoBehaviour
         foreach (var item in items)
         {
             float distance = ControlPlayer.EuclideanDistance(digCrosshair.transform, item.transform);
+            Debug.Log("Pickup Distance: " + distance);
             if (distance < minDistance)
             {
                 minDistance = distance;
@@ -782,6 +800,9 @@ public class GameManager : MonoBehaviour
                 break;
             case ItemType.gems:
                 itemFoundReward = gemFoundReward;
+                break;
+            case ItemType.pictures:
+                itemFoundReward = pictureFoundReward;
                 break;
         }
 
