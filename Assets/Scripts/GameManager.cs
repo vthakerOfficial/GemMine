@@ -11,7 +11,7 @@ using System.Threading;
 public class GameManager : MonoBehaviour
 {
     // Version number
-    const string EXPERIMENT_VERSION = "2.0.3";
+    const string EXPERIMENT_VERSION = "2.1.0";
 
     // Singleton Boilerplate
     public static GameManager gm;
@@ -399,7 +399,7 @@ public class GameManager : MonoBehaviour
         {
             foreach (var item in spawnItems.GetItems())
             {
-                item.GetComponent<PickupItem>().InitPickup();
+                item.GetComponent<PickupItem>().InitPickup(player.transform);
             }
         }
 

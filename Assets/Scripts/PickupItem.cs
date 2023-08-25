@@ -9,6 +9,7 @@ public class PickupItem : MonoBehaviour
     public float pickupTimeMs { get; private set; } = float.MinValue;
 
     private DateTime itemCreationTime = DateTime.MinValue;
+    private Transform lookAtMeTransform = null;
 
     private void Update()
     {
@@ -19,9 +20,15 @@ public class PickupItem : MonoBehaviour
             float yRot = RPM * 6f * Time.deltaTime;
             transform.Rotate(0, yRot, 0, Space.World);
         }
-        if (transform.name.Contains("picture"))
+        Debug.Log(transform.name + "  " + transform.name.Contains("picture"));
+        if (transform.name.Contains("picture") && lookAtMeTransform != null)
         {
-
+            Vector3 dir = lookAtMeTransform.position - transform.position;
+            dir.y = 0;
+            if (dir != Vector3.zero)
+            {
+                transform.rotation = Quaternion.LookRotation(dir);
+            }
         }
     }
 
@@ -29,6 +36,12 @@ public class PickupItem : MonoBehaviour
     {
         isPickedUp = false;
         itemCreationTime = DateTime.Now;
+    }
+
+    public void InitPickup(Transform LookAtMe)
+    {
+        InitPickup();
+        lookAtMeTransform = LookAtMe;
     }
 
     public void Pickup()
