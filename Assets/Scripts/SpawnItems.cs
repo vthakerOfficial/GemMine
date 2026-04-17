@@ -43,6 +43,7 @@ public class SpawnItems : MonoBehaviour
 
                 if (uwr.isNetworkError || uwr.isHttpError)
                 {
+                    im.ShowWarning("Picture " + i + " was not able to load. Please quit the experiment", 5);
                     Debug.Log(uwr.error);
                 }
                 else

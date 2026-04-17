@@ -1,0 +1,10 @@
+{
+    "syncBox": "cml",
+    "nativePlugin": "false",
+    "isLegacyExperiment": false,
+    "launcherScene": "StartupScene_",
+    "eventsPerFrame": 5,
+    "frameRate": 300,
+    "vSync": 1,
+    "syncBoxTestLength": 5000
+}

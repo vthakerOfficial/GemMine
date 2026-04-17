@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Dynamic;
 using System.Collections;
 using System.Collections.Generic;
@@ -36,7 +36,7 @@ public class GameManager : MonoBehaviour
     public const int timelineScoreDuration = 2000; // duration of the timeline score display
     public const int taskDuration = 30000; // duration of the task phases (encoding, retrieval)
     public const int returnToBasePenalty = -5; // penalty for not eturning to the base in time
-    public const int wrongDigPenalty = -2; // penalty for digging in the wrong place
+    public const int wrongDigPenalty = -1; // penalty for digging in the wrong place
     public const int goldFoundReward = 10; // points for each gold piece found
     public const int gemFoundReward = 10; // points for each gem found
     public const int pictureFoundReward = 10; // points for each picture found
