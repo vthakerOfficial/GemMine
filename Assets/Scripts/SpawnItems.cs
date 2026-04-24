@@ -34,6 +34,21 @@ public class SpawnItems : MonoBehaviour
         for (int i=0; i<pictureObjects.Length; ++i)
         {
             string name = "picture" + i + ".jpeg";
+#if UNITY_WEBGL && !UNITY_EDITOR
+            Texture2D resourceTexture = Resources.Load<Texture2D>("picture" + i);
+            if (resourceTexture == null)
+            {
+                Debug.LogWarning("Picture " + i + " is not bundled in Resources; using the prefab's default sprite.");
+                continue;
+            }
+
+            Sprite resourceSprite = Sprite.Create(resourceTexture, new Rect(0, 0, resourceTexture.width, resourceTexture.height), new Vector2(0.5f, 0.5f));
+            Image resourceImage = pictureObjects[i].GetComponent<Image>();
+            if (resourceImage != null)
+            {
+                resourceImage.sprite = resourceSprite;
+            }
+#else
             string path = Path.Combine(im.fileManager.ConfigPath(), name);
             Debug.Log(path);
 
@@ -55,7 +70,10 @@ public class SpawnItems : MonoBehaviour
                     pictureObjects[i].GetComponent<Image>().sprite = sprite;
                 }
             }
+#endif
         }
+
+        yield return null;
     }
 
     public void SpawnGold(int nItems)

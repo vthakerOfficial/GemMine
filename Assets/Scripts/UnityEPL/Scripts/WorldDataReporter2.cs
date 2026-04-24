@@ -5,7 +5,6 @@ using UnityEngine;
 [AddComponentMenu("UnityEPL/Reporters/World Data Reporter2")]
 public class WorldDataReporter2 : DataReporter
 {
-    public string reportingID = "Object ID not set.";
     public bool reportTransform = true;
     public int framesPerTransformReport = 15;
     public bool reportView = true;

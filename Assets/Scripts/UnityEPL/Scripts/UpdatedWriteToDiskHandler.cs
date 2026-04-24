@@ -64,6 +64,9 @@ public class UpdatedWriteToDiskHandler : DataHandler
     /// </summary>
     public void DoWrite()
     {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        waitingPoints.Clear();
+#else
         while (waitingPoints.Count > 0)
         {
             string directory = manager.fileManager.SessionPath();
@@ -85,5 +88,6 @@ public class UpdatedWriteToDiskHandler : DataHandler
             }
             System.IO.File.AppendAllText(filePath, writeMe + System.Environment.NewLine);
         }
+#endif
     }
 }

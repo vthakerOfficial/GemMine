@@ -74,7 +74,7 @@ public class UpdatedLaunchExperiment : MonoBehaviour
         launchButton.SetActive(false);
         loadingButton.SetActive(true);
 
-        manager.Do(new EventBase(manager.LaunchExperiment));
+        manager.Do(new EventBase(() => manager.LaunchExperiment()));
     }
 
     private bool isValidParticipant(string name)

@@ -11,8 +11,8 @@ class ExperimentGameManager : GameManager {
     private byte[] bytes;
 
     protected override void Start() {
-        im.scriptedInput.ReportScriptedEvent("loadScene", new Dictionary<string, object> { { "sceneName", (string)im.GetSetting("experimentScene") } });
-        im.scriptedInput.ReportScriptedEvent("startMainExperiment", new Dictionary<string, object> { { "experimentScene", (string)im.GetSetting("experimentScene") } });
+        im.scriptedInput.ReportScriptedEvent("loadScene", new Dictionary<string, object> { { "sceneName", im.GetSetting<string>("experimentScene") } });
+        im.scriptedInput.ReportScriptedEvent("startMainExperiment", new Dictionary<string, object> { { "experimentScene", im.GetSetting<string>("experimentScene") } });
         base.Start();
 
         // Randomize half of the trials to timed and half to untimed.

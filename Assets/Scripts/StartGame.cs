@@ -27,10 +27,28 @@ public class StartGame : MonoBehaviour
             im = (InterfaceManager)mgr.GetComponent("InterfaceManager");
         }
 
-        string[] scenes = (string[])im.GetSetting("availableScenes").ToObject<string[]>();
+        if (im == null)
+        {
+            Debug.LogWarning("StartGame could not find InterfaceManager.");
+            return;
+        }
 
-        sceneSelection.AddOptions(new List<string>(scenes));
-        SetScene();
+        string[] scenes = im.GetSetting<string[]>("availableScenes", new string[0]);
+        if (sceneSelection != null && scenes != null && scenes.Length > 0)
+        {
+            sceneSelection.ClearOptions();
+            sceneSelection.AddOptions(new List<string>(scenes));
+            SetScene();
+        }
+
+        // Pre-populate input fields from config defaults set by LaunchLauncher
+        string savedParticipant = im.GetSetting<string>("participantCode");
+        if (!string.IsNullOrEmpty(savedParticipant) && participantCode != null)
+            participantCode.text = savedParticipant;
+
+        string savedSession = im.GetSetting<string>("session");
+        if (!string.IsNullOrEmpty(savedSession) && session != null)
+            session.text = savedSession;
     }
 
     public void Start()
@@ -40,7 +58,12 @@ public class StartGame : MonoBehaviour
 
     public void LoadParticipant()
     {
-        Dropdown dropdown = GetComponent<Dropdown>();
+        if (im == null || im.fileManager == null || participantCode == null || session == null)
+        {
+            Debug.LogWarning("Cannot load participant because startup references are not ready.");
+            return;
+        }
+
         string selectedParticipant = participantCode.text;
 
         participantCode.text = selectedParticipant;
@@ -52,18 +75,42 @@ public class StartGame : MonoBehaviour
 
    public void SetScene()
     {
+        if (im == null || sceneSelection == null || sceneSelection.options.Count == 0)
+        {
+            return;
+        }
+
         string value = sceneSelection.options[sceneSelection.value].text;
         im.ChangeSetting("experimentScene", value);
     }
 
     public bool SetParticipantData() {
+        if (im == null || im.fileManager == null)
+        {
+            Debug.LogWarning("Cannot set participant data because startup references are not ready.");
+            return false;
+        }
+
         // Get participant code
         // get session number
-        int sessionNum;
-        if(im.fileManager.isValidParticipant(participantCode.text) && int.TryParse(session.text, out sessionNum)) {
+        string participant = participantCode != null ? participantCode.text : im.GetSetting<string>("participantCode");
+        string sessionText = session != null ? session.text : im.GetSetting<string>("session");
 
-            im.ChangeSetting("participantCode", participantCode.text);
-            im.ChangeSetting("session", session.text);
+        if (string.IsNullOrEmpty(participant))
+        {
+            participant = "U001";
+        }
+
+        if (string.IsNullOrEmpty(sessionText))
+        {
+            sessionText = "0";
+        }
+
+        int sessionNum;
+        if(im.fileManager.isValidParticipant(participant) && int.TryParse(sessionText, out sessionNum)) {
+
+            im.ChangeSetting("participantCode", participant);
+            im.ChangeSetting("session", sessionText);
 
             return true;
         }
@@ -72,20 +119,41 @@ public class StartGame : MonoBehaviour
 
     public void LoadTutorial()
     {
-        if(SetParticipantData() ) {
-            im.ChangeSetting("sceneToLaunch", (string)im.GetSetting("tutorialScene"));
+        Debug.Log("[GemMine] Detected click: Start Tutorial");
+
+        if (im == null)
+        {
+            Debug.LogWarning("[GemMine] LoadTutorial: InterfaceManager is null — cannot proceed.");
+            return;
+        }
+
+        Debug.Log("[GemMine] LoadTutorial: validating participant data...");
+        bool dataOk = SetParticipantData();
+        Debug.Log("[GemMine] LoadTutorial: SetParticipantData() = " + dataOk);
+
+        if (dataOk) {
+            string tutorialScene = im.GetSetting<string>("tutorialScene");
+            Debug.Log("[GemMine] LoadTutorial: tutorialScene = '" + tutorialScene + "'");
+            im.ChangeSetting("sceneToLaunch", tutorialScene);
+            Debug.Log("[GemMine] LoadTutorial: calling im.LaunchExperiment()...");
             im.LaunchExperiment();
-            //ShowConfirmation();
         }
         else {
+            Debug.LogWarning("[GemMine] LoadTutorial: participant data invalid — showing warning.");
             im.Do(new EventBase<string, int>(im.ShowWarning, "Please set participant code and session", 5000));
         }
     }
 
     public void LoadExperiment()
     {
+        if (im == null)
+        {
+            Debug.LogWarning("Cannot load experiment because InterfaceManager is not ready.");
+            return;
+        }
+
         if(SetParticipantData()) {
-            im.ChangeSetting("sceneToLaunch", (string)im.GetSetting("experimentScene"));
+            im.ChangeSetting("sceneToLaunch", im.GetSetting<string>("experimentScene"));
             //ShowConfirmation();
             im.LaunchExperiment();
         }
@@ -95,8 +163,10 @@ public class StartGame : MonoBehaviour
     }
 
     private void ShowConfirmation() {
-      startCanvas.SetActive(false);
-      confirmationCanvas.SetActive(true);
+      if (startCanvas != null)
+          startCanvas.SetActive(false);
+      if (confirmationCanvas != null)
+          confirmationCanvas.SetActive(true);
     }
 
     private void ShowStart() {
@@ -105,12 +175,15 @@ public class StartGame : MonoBehaviour
           AudioSource.PlayClipAtPoint(titleSong, gameObject.transform.position, 1f);
       }
 
-      startCanvas.SetActive(true);
-      confirmationCanvas.SetActive(false);
+      if (startCanvas != null)
+          startCanvas.SetActive(true);
+      if (confirmationCanvas != null)
+          confirmationCanvas.SetActive(false);
     }
 
     public void Quit() {
-      im.Pause();
+      if (im != null)
+          im.Pause();
     }
 
     public void Continue() {

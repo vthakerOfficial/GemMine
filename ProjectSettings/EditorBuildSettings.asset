@@ -17,25 +17,25 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/SMaze2.unity
     guid: 640f4f518a47d499f8185474a723b161
-  - enabled: 0
+  - enabled: 1
     path: Assets/Scenes/SpaceInvaderMaze.unity
     guid: 8a13ca92d3bd04e38a153f3c197ab4ce
-  - enabled: 0
+  - enabled: 1
     path: Assets/Scenes/HMaze.unity
     guid: 13b711ebe56e84a02a69f70e5ecd08d8
-  - enabled: 0
+  - enabled: 1
     path: Assets/Scenes/SMaze.unity
     guid: 5dc153d38794840a1b671a274b9c2f80
-  - enabled: 0
+  - enabled: 1
     path: Assets/Scenes/ChannelMaze.unity
     guid: 971f2053064f342619537f6c6f8a4380
-  - enabled: 0
+  - enabled: 1
     path: Assets/Scenes/CMaze.unity
     guid: 93c37aa1bf30b44a3801972acdd57123
-  - enabled: 0
+  - enabled: 1
     path: Assets/Scenes/OpenField.unity
     guid: c0f62e9a8b595498596b3c1b9b7da63d
-  - enabled: 0
+  - enabled: 1
     path: Assets/Scenes/FrogMine.unity
     guid: 7942c80b521494d089a2cf3ca30a76e7
   - enabled: 0

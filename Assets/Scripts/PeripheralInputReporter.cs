@@ -50,7 +50,7 @@ public class PeripheralInputReporter : DataReporter {
         GameObject mgr = GameObject.Find("InterfaceManager");
         manager = (InterfaceManager)mgr.GetComponent("InterfaceManager");     
 
-        if(!nativePluginRunning && (bool) manager.GetSetting("nativePlugin")) {
+        if(!nativePluginRunning && manager.GetSetting<bool>("nativePlugin")) {
             OSStartTime = StartCocoaPlugin();
             nativePluginRunning = true;
         }
@@ -162,7 +162,7 @@ public class PeripheralInputReporter : DataReporter {
     }
 
     public void OnDestroy() {
-        if(nativePluginRunning && (bool)manager.GetSetting("nativePlugin")) {
+        if(nativePluginRunning && manager.GetSetting<bool>("nativePlugin")) {
             Debug.Log("stopping plugin");
             //StopCocoaPlugin();
             nativePluginRunning = false;

@@ -57,14 +57,17 @@ class PracticeGameManager : GameManager {
     };
 
     protected override void Start() {
-        im.scriptedInput.ReportScriptedEvent("loadScene", new Dictionary<string, object> { { "sceneName", (string)im.GetSetting("tutorialScene") } });
+        Debug.Log("[GemMine] PracticeGameManager.Start(): tutorial scene loaded, initializing...");
+        im.scriptedInput.ReportScriptedEvent("loadScene", new Dictionary<string, object> { { "sceneName", im.GetSetting<string>("tutorialScene") } });
 
         base.Start();
+        Debug.Log("[GemMine] PracticeGameManager.Start(): base.Start() done.");
 
         controlTutorialCanvas = tutorialCanvas.GetComponent<ControlTutorialCanvas>();
         gold1Box.SetActive(true);
 
         FreezeAtBase();
+        Debug.Log("[GemMine] PracticeGameManager.Start(): FreezeAtBase() done, building state machine...");
 
         string itemTypeStr = GetItemTypeStr();
 
@@ -180,6 +183,7 @@ class PracticeGameManager : GameManager {
         im.scriptedInput.ReportScriptedEvent("canvasActive", new Dictionary<string, object> { { "canvasName", "MainCanvas" }, { "isActive", true } });
         im.scriptedInput.ReportScriptedEvent("canvasActive", new Dictionary<string, object> { { "canvasName", "TutorialCanvas" }, { "isActive", false } });
 
+        Debug.Log("[GemMine] PracticeGameManager.Start(): state machine ready (" + stateMachine["Run"].Count + " steps). Calling Run()...");
         Run();
     }
 
@@ -654,8 +658,8 @@ class PracticeGameManager : GameManager {
     public void LaunchExperiment() {
         // Log
         im.scriptedInput.ReportScriptedEvent("gameState", new Dictionary<string, object> { { "stateName", "LaunchExperiment" } });
-        im.ChangeSetting("sceneToLaunch", (string)im.GetSetting("experimentScene"));
+        im.ChangeSetting("sceneToLaunch", im.GetSetting<string>("experimentScene"));
 
-        im.Do(new EventBase<string>(im.LaunchScene, (string)im.GetSetting("sceneToLaunch")));
+        im.Do(new EventBase<string>(im.LaunchScene, im.GetSetting<string>("sceneToLaunch")));
     }
 }

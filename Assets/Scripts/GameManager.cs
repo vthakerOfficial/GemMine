@@ -1,5 +1,4 @@
 using System;
-using System.Dynamic;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -73,7 +72,7 @@ public class GameManager : MonoBehaviour
 
     protected Dictionary<string, List<Action>> stateMachine;
 
-    protected dynamic state;
+    protected GameState state;
 
 
 
@@ -107,7 +106,7 @@ public class GameManager : MonoBehaviour
     protected virtual void Start() {
         gameEvents = new EventQueue();
         stateMachine = new Dictionary<string, List<Action>>();
-        state = new ExpandoObject();
+        state = new GameState();
 
         // set up initial game state
         state.runIndex = 0;
@@ -175,9 +174,11 @@ public class GameManager : MonoBehaviour
 
     public void Run() {
         if(state.runIndex >= stateMachine["Run"].Count) {
+            Debug.Log("[GemMine] Run(): state machine complete (runIndex=" + state.runIndex + ").");
             return;
         }
 
+        Debug.Log("[GemMine] Run(): step " + state.runIndex + " / " + (stateMachine["Run"].Count - 1));
         stateMachine["Run"][state.runIndex].Invoke();
     }
 

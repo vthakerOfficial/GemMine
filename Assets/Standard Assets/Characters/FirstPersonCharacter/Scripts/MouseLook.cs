@@ -19,7 +19,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
         private Quaternion m_CharacterTargetRot;
         private Quaternion m_CameraTargetRot;
-        private bool m_cursorIsLocked = true;
+        private bool m_cursorIsLocked = false; // start unlocked; browser requires a click before requestPointerLock()
 
         public void Init(Transform character, Transform camera)
         {

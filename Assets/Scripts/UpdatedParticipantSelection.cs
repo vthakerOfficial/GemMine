@@ -30,7 +30,7 @@ public class UpdatedParticipantSelection : MonoBehaviour
     void Update() {
 
         // update participants when new experiments are loaded
-        if(experimentUpdated && ((string)manager.GetSetting("experimentName") != null)) {
+        if(experimentUpdated && (manager.GetSetting<string>("experimentName", null) != null)) {
             experimentUpdated = false;
             FindParticipants();
         }
@@ -121,7 +121,7 @@ public class UpdatedParticipantSelection : MonoBehaviour
     public void IncreaseListNumber()
     {
         
-        if (nextListNumber < (int)manager.GetSetting("numLists"))
+        if (nextListNumber < manager.GetSetting<int>("numLists"))
             nextListNumber++;
         UpdateTexts();
     }

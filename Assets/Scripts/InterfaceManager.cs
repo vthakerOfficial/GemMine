@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -35,6 +36,7 @@ public class InterfaceManager : MonoBehaviour {
             DontDestroyOnLoad(pauseCanvas);
             DontDestroyOnLoad(quitCanvas);
             DontDestroyOnLoad(warningCanvas);
+            m_loadingScreen = LoadingScreen.Create();
         }
     }
 
@@ -46,6 +48,9 @@ public class InterfaceManager : MonoBehaviour {
 
     private bool paused = false;
     private CursorLockMode cursorLockState;
+    private bool m_pendingCursorLock = false;
+    private bool m_cursorShouldBeLocked = false;
+    private LoadingScreen m_loadingScreen;
 
     // queue to store key handlers before key event
     private ConcurrentQueue<Action<string, bool>> onKey;
@@ -86,6 +91,13 @@ public class InterfaceManager : MonoBehaviour {
             Pause();
         }
 
+        if (m_pendingCursorLock && Input.GetMouseButtonDown(0))
+        {
+            m_pendingCursorLock = false;
+            if (m_loadingScreen != null) m_loadingScreen.Hide();
+            ApplyCursorLock(CursorLockMode.Locked);
+        }
+
         int i = 0;
         while(mainEvents.Process() && (i < eventsPerFrame)) {
             i++;
@@ -105,6 +117,25 @@ public class InterfaceManager : MonoBehaviour {
         fileManager = new FileManager(this);
         SceneManager.sceneLoaded += onSceneLoaded;
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+        TextAsset sysConfigAsset = Resources.Load<TextAsset>("configs/config");
+        if (sysConfigAsset == null) { Debug.LogError("WebGL: Could not load configs/config from Resources."); return; }
+        systemConfig = FlexibleConfig.LoadFromText(sysConfigAsset.text);
+
+        TextAsset[] allConfigs = Resources.LoadAll<TextAsset>("configs");
+        if (allConfigs.Length < 2) {
+            ShowWarning("Configuration File Error", 5000);
+            DoIn(new EventBase(Quit), 5000);
+        }
+
+        JArray exps = new JArray();
+        foreach (var cfg in allConfigs) {
+            Debug.Log(cfg.name);
+            if (cfg.name != Path.GetFileNameWithoutExtension(SYSTEM_CONFIG))
+                exps.Add(cfg.name);
+        }
+        ChangeSetting("availableExperiments", exps);
+#else
         string text = System.IO.File.ReadAllText(System.IO.Path.Combine(fileManager.ConfigPath(), SYSTEM_CONFIG));
         systemConfig = FlexibleConfig.LoadFromText(text);
 
@@ -113,7 +144,7 @@ public class InterfaceManager : MonoBehaviour {
         string[] configs = Directory.GetFiles(configPath, "*.json");
         if(configs.Length < 2) {
             ShowWarning("Configuration File Error", 5000);
-            DoIn(new EventBase(Quit), 5000);            
+            DoIn(new EventBase(Quit), 5000);
         }
 
         JArray exps = new JArray();
@@ -125,6 +156,7 @@ public class InterfaceManager : MonoBehaviour {
         }
         Debug.Log("changing setting");
         ChangeSetting("availableExperiments", exps);
+#endif
 
         Debug.Log("checkpoint");
 
@@ -153,9 +185,19 @@ public class InterfaceManager : MonoBehaviour {
         eventsPerFrame = (int)(GetSetting("eventsPerFrame") ?? 5);
     }
 
+    void OnApplicationFocus(bool hasFocus)
+    {
+        // When the window regains focus (e.g. after alt+tab), the browser automatically
+        // releases pointer lock. Re-queue a lock so the next click recaptures it.
+        if (hasFocus && m_cursorShouldBeLocked)
+        {
+            m_pendingCursorLock = true;
+        }
+    }
+
     void OnDisable()
     {
-        if (syncBox.Running())
+        if (syncBox != null && syncBox.Running())
         {
             syncBox.Do(new EventBase(syncBox.StopPulse));
         }
@@ -168,7 +210,7 @@ public class InterfaceManager : MonoBehaviour {
     // settings return null.
     //////////
 
-    public dynamic GetSetting(string setting) {
+    public JToken GetSetting(string setting) {
         JToken value = null;
 
         if(experimentConfig != null) {
@@ -188,27 +230,47 @@ public class InterfaceManager : MonoBehaviour {
         return null;
     }
 
+    public T GetSetting<T>(string setting, T defaultValue = default(T)) {
+        JToken value = GetSetting(setting);
+        if(value == null || value.Type == JTokenType.Null) {
+            return defaultValue;
+        }
+
+        try {
+            return value.ToObject<T>();
+        }
+        catch(Exception ex) {
+            Debug.LogWarning("Could not convert setting '" + setting + "' to " + typeof(T).Name + ": " + ex.Message);
+            return defaultValue;
+        }
+    }
+
     // returns true if value updated, false if new value added
-    public bool ChangeSetting(string setting, dynamic value) {
+    public bool ChangeSetting(string setting, object value) {
         JToken existing = GetSetting(setting);
+        JToken token = value as JToken;
+        if(token == null) {
+            token = value == null ? JValue.CreateNull() : JToken.FromObject(value);
+        }
+
         if(existing == null) {
 
             // even if setting belongs to systemConfig, experimentConfig setting overrides
             if(experimentConfig == null) {
-                (systemConfig).Add(setting, value);
+                (systemConfig).Add(setting, token);
             }
             else {
-                (experimentConfig).Add(setting, value);
+                (experimentConfig).Add(setting, token);
             }
             return false;
         }
         else {
             // even if setting belongs to systemConfig, experimentConfig setting overrides
             if(experimentConfig == null) {
-                (systemConfig)[setting] = value;
+                (systemConfig)[setting] = token;
             }
             else {
-                (experimentConfig)[setting] = value;
+                (experimentConfig)[setting] = token;
             }
             return true;
         }
@@ -250,47 +312,76 @@ public class InterfaceManager : MonoBehaviour {
         ChangeSetting("session", 0);
 
         //SceneManager.LoadScene("Scenes/"+ (string)GetSetting("launcherScene"));
-        LaunchExperiment();
+        LaunchExperiment(false);
     }
 
-    public void LaunchExperiment() {
-        // launch scene with exp, 
-        // instantiate experiment,
-        // call start function
-
-        // Check if settings are loaded
+    public void LaunchExperiment(bool captureCursorWhenReady = true) {
+        Debug.Log("[GemMine] LaunchExperiment: called. experimentConfig is " + (experimentConfig != null ? "loaded" : "NULL"));
         if(experimentConfig != null) {
-
             mainEvents.Pause(true);
-
-            SceneManager.LoadScene((string)GetSetting("sceneToLaunch"));
-
-            Cursor.visible = false;
-            LockCursor(CursorLockMode.Locked);
+            Debug.Log("[GemMine] LaunchExperiment: event queue paused.");
 
             Application.runInBackground = true;
+            QualitySettings.vSyncCount = 1;
+            Application.targetFrameRate = 60;
 
-            // Make the game run as fast as possible
-            QualitySettings.vSyncCount = 1;//(int)GetSetting("vSync");
-            Application.targetFrameRate = 60;//(int)GetSetting("frameRate");
-
-            // create path for current participant/session
+            Debug.Log("[GemMine] LaunchExperiment: creating session...");
             fileManager.CreateSession();
+            Debug.Log("[GemMine] LaunchExperiment: session created.");
 
-            // Start syncbox
-            if (syncBox != null) 
-            {
-                if (!syncBox.IsRunning())
-                {
-                    syncBox.Do(new EventBase(syncBox.StartPulse));
-                }
-            }
+            if (syncBox != null && !syncBox.IsRunning())
+                syncBox.Do(new EventBase(syncBox.StartPulse));
 
-            // won't execute until mgr is ready
-            //Do(new EventBase(LogExperimentInfo));
+            string scene = (string)GetSetting("sceneToLaunch");
+            Debug.Log("[GemMine] LaunchExperiment: starting async load of scene '" + scene + "'");
+            StartCoroutine(LoadExperimentAsync(scene, captureCursorWhenReady));
         }
         else {
+            Debug.LogError("[GemMine] LaunchExperiment: experimentConfig is null!");
             throw new Exception("No experiment configuration loaded");
+        }
+    }
+
+    private IEnumerator LoadExperimentAsync(string sceneName, bool captureCursorWhenReady) {
+        Debug.Log("[GemMine] LoadExperimentAsync: beginning load of '" + sceneName + "'");
+        if (m_loadingScreen != null)
+        {
+            m_loadingScreen.SetProgress(0f);
+            m_loadingScreen.Show();
+        }
+
+        var op = SceneManager.LoadSceneAsync(sceneName);
+        if (op == null) { Debug.LogError("[GemMine] LoadExperimentAsync: LoadSceneAsync returned null — is '" + sceneName + "' in Build Settings?"); yield break; }
+
+        float lastLoggedProgress = -1f;
+        while (!op.isDone)
+        {
+            float progress = Mathf.Clamp01(op.progress / 0.9f);
+            if (m_loadingScreen != null) m_loadingScreen.SetProgress(progress);
+            // Log only at each 25% milestone to avoid spamming console
+            float bucket = Mathf.Floor(progress * 4f) / 4f;
+            if (bucket > lastLoggedProgress) {
+                Debug.Log("[GemMine] LoadExperimentAsync: scene load " + (int)(progress * 100) + "%");
+                lastLoggedProgress = bucket;
+            }
+            yield return null;
+        }
+
+        Debug.Log("[GemMine] LoadExperimentAsync: scene fully loaded.");
+        if (m_loadingScreen != null) m_loadingScreen.SetProgress(1f);
+
+        if (captureCursorWhenReady)
+        {
+            Cursor.visible = false;
+            m_pendingCursorLock = true;
+            Debug.Log("[GemMine] LoadExperimentAsync: cursor hidden, waiting for first click to lock mouse.");
+        }
+        else
+        {
+            m_pendingCursorLock = false;
+            ApplyCursorLock(CursorLockMode.None);
+            if (m_loadingScreen != null) m_loadingScreen.Hide();
+            Debug.Log("[GemMine] LoadExperimentAsync: launcher scene ready, cursor remains free.");
         }
     }
 
@@ -301,8 +392,14 @@ public class InterfaceManager : MonoBehaviour {
     }
 
     public void LoadExperimentConfig(string name) {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        TextAsset asset = Resources.Load<TextAsset>("configs/" + name);
+        if (asset == null) { Debug.LogError("WebGL: Could not load configs/" + name + " from Resources."); return; }
+        experimentConfig = FlexibleConfig.LoadFromText(asset.text);
+#else
         string text = System.IO.File.ReadAllText(System.IO.Path.Combine(fileManager.ConfigPath(), name + ".json"));
-        experimentConfig = FlexibleConfig.LoadFromText(text); 
+        experimentConfig = FlexibleConfig.LoadFromText(text);
+#endif
     }
 
     public void ShowWarning(string warnMsg, int duration) {
@@ -346,7 +443,10 @@ public class InterfaceManager : MonoBehaviour {
         }
         else
         {
-            LockCursor(cursorLockState);
+            if (cursorLockState == CursorLockMode.Locked)
+                m_pendingCursorLock = true; // re-lock on next click (WebGL user gesture requirement)
+            else
+                LockCursor(cursorLockState);
         }
 
         if(game != null) {
@@ -368,14 +468,25 @@ public class InterfaceManager : MonoBehaviour {
 
     public void LockCursor(CursorLockMode isLocked)
     {
-        Cursor.lockState = isLocked;
-        if (isLocked == CursorLockMode.None)
+        m_cursorShouldBeLocked = (isLocked == CursorLockMode.Locked);
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        if (isLocked == CursorLockMode.Locked)
         {
-            Cursor.visible = true;
-        }
-        else{
+            m_pendingCursorLock = true;
             Cursor.visible = false;
+            return;
         }
+#endif
+
+        m_pendingCursorLock = false;
+        ApplyCursorLock(isLocked);
+    }
+
+    private void ApplyCursorLock(CursorLockMode isLocked)
+    {
+        Cursor.lockState = isLocked;
+        Cursor.visible = (isLocked == CursorLockMode.None);
     }
 
     public void Quit() 
@@ -386,7 +497,7 @@ public class InterfaceManager : MonoBehaviour {
             scriptedInput.ReportScriptedEvent("quitExperiment", new Dictionary<string, object> { { "quitExperiment", true } });
             Invoke("DoDoWrite", 0);
         }
-        syncBox.Close();
+        if (syncBox != null) syncBox.Close();
         Invoke("DoQuit", 0.5f);
     }
 
@@ -520,14 +631,21 @@ public class FileManager {
     }
 
     public void CreateSession() {
+#if !UNITY_WEBGL || UNITY_EDITOR
         Directory.CreateDirectory(SessionPath());
+#endif
     }
 
     public void CreateParticipant() {
+#if !UNITY_WEBGL || UNITY_EDITOR
         Directory.CreateDirectory(ParticipantPath());
+#endif
     }
+
     public void CreateExperiment() {
+#if !UNITY_WEBGL || UNITY_EDITOR
         Directory.CreateDirectory(ExperimentPath());
+#endif
     }
 
     public string ConfigPath() {
@@ -536,11 +654,15 @@ public class FileManager {
     }
 
     public int CurrentSession(string participant) {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        return 0;
+#else
         int nextSessionNumber = 0;
         while (System.IO.Directory.Exists(manager.fileManager.SessionPath(participant, nextSessionNumber)))
         {
             nextSessionNumber++;
         }
         return nextSessionNumber;
+#endif
     }
 }

@@ -9,6 +9,8 @@ public class EventQueue {
 
     protected volatile int repeatingEventID = 0;
     protected ConcurrentDictionary<int, RepeatingEvent> repeatingEvents = new ConcurrentDictionary<int, RepeatingEvent>();
+    private readonly object scheduledEventsLock = new object();
+    private readonly List<ScheduledEvent> scheduledEvents = new List<ScheduledEvent>();
 
     protected volatile bool running = true;
 
@@ -18,10 +20,9 @@ public class EventQueue {
 
     public virtual void DoIn(IEventBase thisEvent, int delay) {
         if(Running()) {
-            Timer timer = null;
-            RepeatingEvent repeatingEvent = new RepeatingEvent(thisEvent, 1, delay, Timeout.Infinite);
-
-            DoRepeating(repeatingEvent);
+            lock (scheduledEventsLock) {
+                scheduledEvents.Add(new ScheduledEvent(thisEvent, delay));
+            }
         }
         else {
             throw new Exception("Can't add timed event to non running Queue");
@@ -50,12 +51,30 @@ public class EventQueue {
     // Process one event in the queue.
     // Returns true if an event was available to process.
     public bool Process() {
+        ProcessScheduledEvents();
+
         IEventBase thisEvent;
         if (running && eventQueue.TryDequeue(out thisEvent)) {
             thisEvent.Invoke();
             return true;
         }
         return false;
+    }
+
+    private void ProcessScheduledEvents() {
+        if (!running) {
+            return;
+        }
+
+        DateTime now = DateTime.Now;
+        lock (scheduledEventsLock) {
+            for (int i = scheduledEvents.Count - 1; i >= 0; i--) {
+                if (scheduledEvents[i].DueTime <= now) {
+                    eventQueue.Enqueue(scheduledEvents[i].Event);
+                    scheduledEvents.RemoveAt(i);
+                }
+            }
+        }
     }
 
     public EventQueue() {
@@ -79,6 +98,17 @@ public class EventQueue {
 
     public void Pause(bool pause) {
         DateTime time = DateTime.Now;
+        lock (scheduledEventsLock) {
+            foreach(ScheduledEvent scheduledEvent in scheduledEvents) {
+                if(pause) {
+                    scheduledEvent.RemainingDelay = Math.Max(0, (int)((TimeSpan)(scheduledEvent.DueTime - time)).TotalMilliseconds);
+                }
+                else {
+                    scheduledEvent.DueTime = time.AddMilliseconds(scheduledEvent.RemainingDelay);
+                }
+            }
+        }
+
         if(pause) {
             running = false;
             foreach(RepeatingEvent re in repeatingEvents.Values) {
@@ -113,6 +143,18 @@ public class EventQueue {
                     repeatingEvents.TryRemove(i, out re);
                 }
             }
+        }
+    }
+
+    private class ScheduledEvent {
+        public IEventBase Event;
+        public DateTime DueTime;
+        public int RemainingDelay;
+
+        public ScheduledEvent(IEventBase thisEvent, int delay) {
+            Event = thisEvent;
+            RemainingDelay = Math.Max(0, delay);
+            DueTime = DateTime.Now.AddMilliseconds(RemainingDelay);
         }
     }
 }
