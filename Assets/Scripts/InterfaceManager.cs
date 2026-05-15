@@ -36,7 +36,6 @@ public class InterfaceManager : MonoBehaviour {
             DontDestroyOnLoad(pauseCanvas);
             DontDestroyOnLoad(quitCanvas);
             DontDestroyOnLoad(warningCanvas);
-            m_loadingScreen = LoadingScreen.Create();
         }
     }
 
@@ -50,7 +49,6 @@ public class InterfaceManager : MonoBehaviour {
     private CursorLockMode cursorLockState;
     private bool m_pendingCursorLock = false;
     private bool m_cursorShouldBeLocked = false;
-    private LoadingScreen m_loadingScreen;
 
     // queue to store key handlers before key event
     private ConcurrentQueue<Action<string, bool>> onKey;
@@ -94,7 +92,6 @@ public class InterfaceManager : MonoBehaviour {
         if (m_pendingCursorLock && Input.GetMouseButtonDown(0))
         {
             m_pendingCursorLock = false;
-            if (m_loadingScreen != null) m_loadingScreen.Hide();
             ApplyCursorLock(CursorLockMode.Locked);
         }
 
@@ -344,11 +341,6 @@ public class InterfaceManager : MonoBehaviour {
 
     private IEnumerator LoadExperimentAsync(string sceneName, bool captureCursorWhenReady) {
         Debug.Log("[GemMine] LoadExperimentAsync: beginning load of '" + sceneName + "'");
-        if (m_loadingScreen != null)
-        {
-            m_loadingScreen.SetProgress(0f);
-            m_loadingScreen.Show();
-        }
 
         var op = SceneManager.LoadSceneAsync(sceneName);
         if (op == null) { Debug.LogError("[GemMine] LoadExperimentAsync: LoadSceneAsync returned null — is '" + sceneName + "' in Build Settings?"); yield break; }
@@ -357,7 +349,6 @@ public class InterfaceManager : MonoBehaviour {
         while (!op.isDone)
         {
             float progress = Mathf.Clamp01(op.progress / 0.9f);
-            if (m_loadingScreen != null) m_loadingScreen.SetProgress(progress);
             // Log only at each 25% milestone to avoid spamming console
             float bucket = Mathf.Floor(progress * 4f) / 4f;
             if (bucket > lastLoggedProgress) {
@@ -368,7 +359,6 @@ public class InterfaceManager : MonoBehaviour {
         }
 
         Debug.Log("[GemMine] LoadExperimentAsync: scene fully loaded.");
-        if (m_loadingScreen != null) m_loadingScreen.SetProgress(1f);
 
         if (captureCursorWhenReady)
         {
@@ -380,7 +370,6 @@ public class InterfaceManager : MonoBehaviour {
         {
             m_pendingCursorLock = false;
             ApplyCursorLock(CursorLockMode.None);
-            if (m_loadingScreen != null) m_loadingScreen.Hide();
             Debug.Log("[GemMine] LoadExperimentAsync: launcher scene ready, cursor remains free.");
         }
     }
