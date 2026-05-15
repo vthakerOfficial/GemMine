@@ -1,8 +1,0 @@
-{
-   "experimentName": "Goldmine",
-   "sceneToLaunch": "Startup",
-   "tutorialScene": "Tutorial",
-   "experimentScene": "SMaze2",
-   "availableScenes": ["SMaze2", "SpaceInvaderMaze", "HMaze", "SMaze", "ChannelMaze", "CMaze", "OpenField", "FrogMine"],
-   "prefix": "test"
-}

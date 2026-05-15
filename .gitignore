@@ -9,6 +9,7 @@
 /[Bb]uild/
 /[Bb]uilds/
 /WebGL_Build/
+/data/
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 *.log

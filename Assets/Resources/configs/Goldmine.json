@@ -4,5 +4,7 @@
    "tutorialScene": "Tutorial",
    "experimentScene": "SMaze2",
    "availableScenes": ["SMaze2", "SpaceInvaderMaze", "HMaze", "SMaze", "ChannelMaze", "CMaze", "OpenField", "FrogMine"],
+   "itemType": "gems",
+   "availableItemTypes": ["pictures", "gems", "gold"],
    "prefix": "test"
 }

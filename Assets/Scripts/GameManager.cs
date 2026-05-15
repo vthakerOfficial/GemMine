@@ -82,7 +82,18 @@ public class GameManager : MonoBehaviour
         pictures
     }
     protected ItemType itemType = ItemType.pictures;
-    public string GetItemTypeStr() { return itemType == ItemType.gold ? "gold" : "items"; }
+    public string GetItemTypeStr()
+    {
+        switch (itemType)
+        {
+            case ItemType.gold:
+                return "gold";
+            case ItemType.gems:
+                return "gems";
+            default:
+                return "items";
+        }
+    }
     //public string GetItemTypeStr() { return Enum.GetName(itemType.GetType(), itemType); }
 
     public static bool timelineSystemEnabled { get; private set; } = true;
@@ -107,6 +118,7 @@ public class GameManager : MonoBehaviour
         gameEvents = new EventQueue();
         stateMachine = new Dictionary<string, List<Action>>();
         state = new GameState();
+        ConfigureItemType();
 
         // set up initial game state
         state.runIndex = 0;
@@ -133,10 +145,27 @@ public class GameManager : MonoBehaviour
         im.scriptedInput.ReportScriptedEvent("experimentInfo", new Dictionary<string, object> {
             {"experimentName", experimentName},
             {"experimentVersion", EXPERIMENT_VERSION},
-            {"unityVersion", Application.unityVersion}
+            {"unityVersion", Application.unityVersion},
+            {"itemType", itemType.ToString()}
         });
 
         gameEvents.Pause(false);
+    }
+
+    private void ConfigureItemType()
+    {
+        string configuredItemType = im.GetSetting<string>("itemType", ItemType.pictures.ToString());
+        ItemType parsedItemType;
+        if (Enum.TryParse<ItemType>(configuredItemType, true, out parsedItemType))
+        {
+            itemType = parsedItemType;
+            return;
+        }
+
+        Debug.LogWarning("Unknown itemType '" + configuredItemType + "'. Available itemTypes: " +
+                         string.Join(", ", Enum.GetNames(typeof(ItemType))) +
+                         ". Please fix this in config file. Defaulting to pictures item type.");
+        itemType = ItemType.pictures;
     }
 
     protected void Update() {
