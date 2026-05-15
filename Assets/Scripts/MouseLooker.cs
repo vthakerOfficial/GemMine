@@ -34,10 +34,18 @@ public class MouseLooker : MonoBehaviour
 	
 	void Update() 
     {
-        if (!isFrozen) {
-            // rotate stuff based on the mouse
-            LookRotation();
+        if (isFrozen) {
+            return;
         }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+		if (Cursor.lockState != CursorLockMode.Locked) {
+			return;
+		}
+#endif
+
+		// rotate stuff based on the mouse
+		LookRotation();
 	}
 	
 	public void LookRotation()
